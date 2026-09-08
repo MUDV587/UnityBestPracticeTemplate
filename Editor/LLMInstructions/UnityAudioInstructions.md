@@ -18,8 +18,8 @@ Table of contents:
 
 # Unity Version-Specific Instructions
 
-- ℹ️ This project uses Unity 6.3. The Audio system is unchanged from Unity 2022 LTS, but Unity 6 adds the **Unity Audio Random Container** for randomised SFX — prefer it over manual randomisation.
-- ℹ️ Unity 6 deprecates the FMOD-based audio backend in favour of the native Unity Audio backend — ensure project settings use the native backend.
+- ℹ️ This project uses Unity 2022.3 LTS. The Audio system is unchanged from Unity 2022 LTS.
+- ℹ️ Unity Audio Random Containers and the native (non-FMOD) audio backend are Unity 6 features — not available on 2022.3. Randomise SFX in code (pick a random clip from an array, or randomise `AudioSource.pitch`) instead.
 - ℹ️ Use `AudioSource.outputAudioMixerGroup` to route all audio through the mixer — direct volume control on `AudioSource.volume` bypasses the mixer hierarchy.
 - ℹ️ `AudioMixer.SetFloat` parameter names must match **Exposed Parameters** names in the Audio Mixer window exactly (case-sensitive).
 
@@ -34,17 +34,17 @@ Table of contents:
 ```csharp
 public class AudioSourceSetup : MonoBehaviour
 {
-    [SerializeField] private AudioMixerGroup m_SFXGroup;
+    [SerializeField] private AudioMixerGroup _sFXGroup;
 
-    private AudioSource m_Source;
+    private AudioSource _source;
 
     private void Awake()
     {
-        m_Source = GetComponent<AudioSource>();
+        _source = GetComponent<AudioSource>();
 
         // Route to the SFX group — not setting volume directly
-        m_Source.outputAudioMixerGroup = m_SFXGroup;
-        m_Source.playOnAwake = false;
+        _source.outputAudioMixerGroup = _sFXGroup;
+        _source.playOnAwake = false;
     }
 }
 ```
@@ -59,26 +59,26 @@ public class AudioSourceSetup : MonoBehaviour
 ```csharp
 public class AudioStateManager : MonoBehaviour
 {
-    [SerializeField] private AudioMixerSnapshot m_ExplorationSnapshot;
-    [SerializeField] private AudioMixerSnapshot m_CombatSnapshot;
-    [SerializeField] private AudioMixerSnapshot m_PauseSnapshot;
+    [SerializeField] private AudioMixerSnapshot _explorationSnapshot;
+    [SerializeField] private AudioMixerSnapshot _combatSnapshot;
+    [SerializeField] private AudioMixerSnapshot _pauseSnapshot;
 
-    [SerializeField] private float m_TransitionTime = 0.5f;
+    [SerializeField] private float _transitionTime = 0.5f;
 
     public void EnterCombat()
     {
-        m_CombatSnapshot.TransitionTo(m_TransitionTime);
+        _combatSnapshot.TransitionTo(_transitionTime);
     }
 
     public void ExitCombat()
     {
-        m_ExplorationSnapshot.TransitionTo(m_TransitionTime);
+        _explorationSnapshot.TransitionTo(_transitionTime);
     }
 
     public void PauseGame()
     {
         // Instant pause — no transition time
-        m_PauseSnapshot.TransitionTo(0f);
+        _pauseSnapshot.TransitionTo(0f);
     }
 }
 ```
@@ -94,39 +94,39 @@ public class AudioStateManager : MonoBehaviour
 ```csharp
 public class VolumeController : MonoBehaviour
 {
-    [SerializeField] private AudioMixer m_Mixer;
+    [SerializeField] private AudioMixer _mixer;
 
-    private const string k_MasterVolumeParam = "MasterVolume";
-    private const string k_MusicVolumeParam = "MusicVolume";
-    private const string k_SFXVolumeParam = "SFXVolume";
+    private const string MasterVolumeParam = "MasterVolume";
+    private const string MusicVolumeParam = "MusicVolume";
+    private const string SFXVolumeParam = "SFXVolume";
 
     // Call this from a UI Slider's onValueChanged event
     // sliderValue: 0.0 (silent) to 1.0 (full volume)
     public void SetMasterVolume(float sliderValue)
     {
         float db = LinearToDecibels(sliderValue);
-        m_Mixer.SetFloat(k_MasterVolumeParam, db);
-        PlayerPrefs.SetFloat(k_MasterVolumeParam, sliderValue);
+        _mixer.SetFloat(MasterVolumeParam, db);
+        PlayerPrefs.SetFloat(MasterVolumeParam, sliderValue);
     }
 
     public void SetMusicVolume(float sliderValue)
     {
-        m_Mixer.SetFloat(k_MusicVolumeParam, LinearToDecibels(sliderValue));
-        PlayerPrefs.SetFloat(k_MusicVolumeParam, sliderValue);
+        _mixer.SetFloat(MusicVolumeParam, LinearToDecibels(sliderValue));
+        PlayerPrefs.SetFloat(MusicVolumeParam, sliderValue);
     }
 
     public void SetSFXVolume(float sliderValue)
     {
-        m_Mixer.SetFloat(k_SFXVolumeParam, LinearToDecibels(sliderValue));
-        PlayerPrefs.SetFloat(k_SFXVolumeParam, sliderValue);
+        _mixer.SetFloat(SFXVolumeParam, LinearToDecibels(sliderValue));
+        PlayerPrefs.SetFloat(SFXVolumeParam, sliderValue);
     }
 
     private void Start()
     {
         // Restore saved volumes on startup
-        SetMasterVolume(PlayerPrefs.GetFloat(k_MasterVolumeParam, 1f));
-        SetMusicVolume(PlayerPrefs.GetFloat(k_MusicVolumeParam, 1f));
-        SetSFXVolume(PlayerPrefs.GetFloat(k_SFXVolumeParam, 1f));
+        SetMasterVolume(PlayerPrefs.GetFloat(MasterVolumeParam, 1f));
+        SetMusicVolume(PlayerPrefs.GetFloat(MusicVolumeParam, 1f));
+        SetSFXVolume(PlayerPrefs.GetFloat(SFXVolumeParam, 1f));
     }
 
     private static float LinearToDecibels(float linear)
@@ -148,22 +148,22 @@ public class VolumeController : MonoBehaviour
 ```csharp
 public class AudioPool : MonoBehaviour
 {
-    [SerializeField] private int m_InitialPoolSize = 20;
-    [SerializeField] private int m_MaxPoolSize = 40;
-    [SerializeField] private AudioMixerGroup m_DefaultSFXGroup;
+    [SerializeField] private int _initialPoolSize = 20;
+    [SerializeField] private int _maxPoolSize = 40;
+    [SerializeField] private AudioMixerGroup _defaultSFXGroup;
 
-    private ObjectPool<AudioSource> m_Pool;
+    private ObjectPool<AudioSource> _pool;
 
     private void Awake()
     {
-        m_Pool = new ObjectPool<AudioSource>(
+        _pool = new ObjectPool<AudioSource>(
             createFunc: CreateAudioSource,
             actionOnGet: source => source.gameObject.SetActive(true),
             actionOnRelease: source => source.gameObject.SetActive(false),
             actionOnDestroy: source => Destroy(source.gameObject),
             collectionCheck: false,
-            defaultCapacity: m_InitialPoolSize,
-            maxSize: m_MaxPoolSize
+            defaultCapacity: _initialPoolSize,
+            maxSize: _maxPoolSize
         );
     }
 
@@ -172,14 +172,14 @@ public class AudioPool : MonoBehaviour
         var go = new GameObject("PooledAudioSource");
         go.transform.SetParent(transform);
         var source = go.AddComponent<AudioSource>();
-        source.outputAudioMixerGroup = m_DefaultSFXGroup;
+        source.outputAudioMixerGroup = _defaultSFXGroup;
         source.playOnAwake = false;
         return source;
     }
 
     public void PlaySFX(AudioClip clip, Vector3 position, float volume = 1f, float pitch = 1f)
     {
-        AudioSource source = m_Pool.Get();
+        AudioSource source = _pool.Get();
         source.transform.position = position;
         source.clip = clip;
         source.volume = volume;
@@ -191,7 +191,7 @@ public class AudioPool : MonoBehaviour
     private System.Collections.IEnumerator ReturnWhenDone(AudioSource source, float duration)
     {
         yield return new WaitForSeconds(duration);
-        m_Pool.Release(source);
+        _pool.Release(source);
     }
 }
 ```
@@ -204,11 +204,11 @@ AudioSource.PlayClipAtPoint(clip, transform.position);
 // Allocates a new GameObject + AudioSource every call, then destroys it after playback
 
 // PREFER — use a pooled audio service
-[SerializeField] private AudioPool m_AudioPool;
+[SerializeField] private AudioPool _audioPool;
 
 private void OnFootstep()
 {
-    m_AudioPool.PlaySFX(m_FootstepClip, transform.position);
+    _audioPool.PlaySFX(_footstepClip, transform.position);
 }
 ```
 
@@ -230,19 +230,19 @@ private void OnFootstep()
 ```csharp
 public class AudioMemoryManager : MonoBehaviour
 {
-    [SerializeField] private AudioClip m_BossMusic;
+    [SerializeField] private AudioClip _bossMusic;
 
     public void PrepareForBossFight()
     {
         // Ensure the clip is loaded before the fight starts
-        if (!m_BossMusic.loadState.Equals(AudioDataLoadState.Loaded))
-            m_BossMusic.LoadAudioData();
+        if (!_bossMusic.loadState.Equals(AudioDataLoadState.Loaded))
+            _bossMusic.LoadAudioData();
     }
 
     public void ExitBossFight()
     {
         // Unload boss music from memory when no longer needed
-        m_BossMusic.UnloadAudioData();
+        _bossMusic.UnloadAudioData();
     }
 }
 ```
@@ -258,18 +258,18 @@ public class AudioMemoryManager : MonoBehaviour
 ```csharp
 public class WorldSFXSource : MonoBehaviour
 {
-    private AudioSource m_Source;
+    private AudioSource _source;
 
-    [SerializeField] private float m_MinDistance = 2f;
-    [SerializeField] private float m_MaxDistance = 25f;
+    [SerializeField] private float _minDistance = 2f;
+    [SerializeField] private float _maxDistance = 25f;
 
     private void Awake()
     {
-        m_Source = GetComponent<AudioSource>();
-        m_Source.spatialBlend = 1f;         // Fully 3D
-        m_Source.minDistance = m_MinDistance;
-        m_Source.maxDistance = m_MaxDistance;
-        m_Source.rolloffMode = AudioRolloffMode.Logarithmic;
+        _source = GetComponent<AudioSource>();
+        _source.spatialBlend = 1f;         // Fully 3D
+        _source.minDistance = _minDistance;
+        _source.maxDistance = _maxDistance;
+        _source.rolloffMode = AudioRolloffMode.Logarithmic;
     }
 }
 ```
@@ -291,14 +291,14 @@ public class AudioService : MonoBehaviour
     public static AudioService Instance { get; private set; }
 
     [Header("Mixer Groups")]
-    [SerializeField] private AudioMixerGroup m_SFXGroup;
-    [SerializeField] private AudioMixerGroup m_MusicGroup;
+    [SerializeField] private AudioMixerGroup _sFXGroup;
+    [SerializeField] private AudioMixerGroup _musicGroup;
 
     [Header("Pool Settings")]
-    [SerializeField] private int m_SFXPoolSize = 20;
+    [SerializeField] private int _sFXPoolSize = 20;
 
-    private ObjectPool<AudioSource> m_SFXPool;
-    private AudioSource m_MusicSource;
+    private ObjectPool<AudioSource> _sFXPool;
+    private AudioSource _musicSource;
 
     private void Awake()
     {
@@ -310,20 +310,20 @@ public class AudioService : MonoBehaviour
 
     private void InitialisePools()
     {
-        m_SFXPool = new ObjectPool<AudioSource>(
+        _sFXPool = new ObjectPool<AudioSource>(
             createFunc: CreateSFXSource,
             actionOnGet: s => s.gameObject.SetActive(true),
             actionOnRelease: s => { s.Stop(); s.gameObject.SetActive(false); },
             actionOnDestroy: s => Destroy(s.gameObject),
-            defaultCapacity: m_SFXPoolSize,
-            maxSize: m_SFXPoolSize * 2
+            defaultCapacity: _sFXPoolSize,
+            maxSize: _sFXPoolSize * 2
         );
 
         var musicGo = new GameObject("MusicSource");
         musicGo.transform.SetParent(transform);
-        m_MusicSource = musicGo.AddComponent<AudioSource>();
-        m_MusicSource.outputAudioMixerGroup = m_MusicGroup;
-        m_MusicSource.loop = true;
+        _musicSource = musicGo.AddComponent<AudioSource>();
+        _musicSource.outputAudioMixerGroup = _musicGroup;
+        _musicSource.loop = true;
     }
 
     private AudioSource CreateSFXSource()
@@ -331,7 +331,7 @@ public class AudioService : MonoBehaviour
         var go = new GameObject("SFX");
         go.transform.SetParent(transform);
         var src = go.AddComponent<AudioSource>();
-        src.outputAudioMixerGroup = m_SFXGroup;
+        src.outputAudioMixerGroup = _sFXGroup;
         src.playOnAwake = false;
         return src;
     }
@@ -339,7 +339,7 @@ public class AudioService : MonoBehaviour
     public void PlaySFX(AudioClip clip, Vector3 worldPosition)
     {
         if (clip == null) return;
-        AudioSource src = m_SFXPool.Get();
+        AudioSource src = _sFXPool.Get();
         src.transform.position = worldPosition;
         src.spatialBlend = 1f;
         src.clip = clip;
@@ -349,15 +349,15 @@ public class AudioService : MonoBehaviour
 
     public void PlayMusic(AudioClip musicClip)
     {
-        m_MusicSource.clip = musicClip;
-        m_MusicSource.Play();
+        _musicSource.clip = musicClip;
+        _musicSource.Play();
     }
 
     private System.Collections.IEnumerator ReturnToPool(AudioSource src, float delay)
     {
         yield return new WaitForSeconds(delay);
         if (src != null && src.gameObject.activeSelf)
-            m_SFXPool.Release(src);
+            _sFXPool.Release(src);
     }
 }
 
@@ -392,14 +392,14 @@ private void DebugAudioSource(AudioSource source)
 
 ```csharp
 // Issue: 3D sound not attenuating — Spatial Blend must be 1 for fully 3D audio
-Debug.Log($"Spatial Blend: {m_Source.spatialBlend}");  // 0 = 2D, 1 = 3D
+Debug.Log($"Spatial Blend: {_source.spatialBlend}");  // 0 = 2D, 1 = 3D
 
 // Debug: Check listener distance vs max distance
 var listener = FindObjectOfType<AudioListener>();
 if (listener != null)
 {
     float distance = Vector3.Distance(transform.position, listener.transform.position);
-    Debug.Log($"Distance to listener: {distance:F1}, Max Distance: {m_Source.maxDistance}");
+    Debug.Log($"Distance to listener: {distance:F1}, Max Distance: {_source.maxDistance}");
 }
 ```
 
@@ -411,7 +411,7 @@ if (listener != null)
 // (right-click the volume knob → Expose '<name>' to script)
 
 float value;
-if (m_Mixer.GetFloat("MasterVolume", out value))
+if (_mixer.GetFloat("MasterVolume", out value))
 {
     Debug.Log($"MasterVolume: {value} dB");
 }

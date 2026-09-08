@@ -20,10 +20,10 @@ Table of contents:
 
 # Unity Version-Specific Instructions
 
-- ℹ️ This project uses Unity 6.3 and **Netcode for GameObjects (NGO) 2.x**. NGO 2.x introduced breaking changes from 1.x — do not reference NGO 1.x documentation.
-- ℹ️ NGO 2.x requires Unity 6.0 or later. The package ID is `com.unity.netcode.gameobjects`.
-- ℹ️ NGO 2.x adds `NetworkVariable` write permissions per-client (not just server-authoritative) — always declare explicit `NetworkVariableWritePermission` and `NetworkVariableReadPermission`.
-- ℹ️ Unity 6 + NGO 2.x supports `Awaitable`-based connection flows — prefer async patterns over coroutines for connection setup.
+- ℹ️ This project uses Unity 2022.3 LTS and **Netcode for GameObjects (NGO) 1.x**. Do not reference NGO 2.x documentation — it targets Unity 6 and has breaking API changes.
+- ℹ️ NGO 1.x supports Unity 2021.3 and later. The package ID is `com.unity.netcode.gameobjects` (use 1.9.x for Unity 2022.3).
+- ℹ️ Always declare explicit `NetworkVariableReadPermission` and `NetworkVariableWritePermission` — the defaults changed across NGO versions and are not reliable.
+- ℹ️ NGO 1.x connection setup is synchronous (`StartHost` / `StartClient` return a bool) — there is no `Awaitable` on Unity 2022.3, so use plain methods or coroutines for connection logic.
 
 # Core Concepts
 
@@ -44,7 +44,7 @@ Table of contents:
 ```csharp
 public class NetworkBootstrapper : MonoBehaviour
 {
-    public async Awaitable StartAsHost()
+    public void StartAsHost()
     {
         bool started = NetworkManager.Singleton.StartHost();
         if (!started)
@@ -56,7 +56,7 @@ public class NetworkBootstrapper : MonoBehaviour
         Debug.Log("[Network] Host started. Waiting for clients...");
     }
 
-    public async Awaitable StartAsClient(string ipAddress, ushort port)
+    public void StartAsClient(string ipAddress, ushort port)
     {
         var transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
         transport.SetConnectionData(ipAddress, port);
@@ -93,9 +93,9 @@ public class NetworkBootstrapper : MonoBehaviour
 ```csharp
 public class PlayerHealth : NetworkBehaviour
 {
-    [SerializeField] private int m_MaxHealth = 100;
+    [SerializeField] private int _maxHealth = 100;
 
-    private NetworkVariable<int> m_CurrentHealth =
+    private NetworkVariable<int> _currentHealth =
         new NetworkVariable<int>(
             value: 100,
             readPerm: NetworkVariableReadPermission.Everyone,
@@ -107,16 +107,16 @@ public class PlayerHealth : NetworkBehaviour
         base.OnNetworkSpawn();
 
         // Subscribe to value changes on all clients
-        m_CurrentHealth.OnValueChanged += HandleHealthChanged;
+        _currentHealth.OnValueChanged += HandleHealthChanged;
 
         if (IsServer)
-            m_CurrentHealth.Value = m_MaxHealth;
+            _currentHealth.Value = _maxHealth;
     }
 
     public override void OnNetworkDespawn()
     {
         base.OnNetworkDespawn();
-        m_CurrentHealth.OnValueChanged -= HandleHealthChanged;
+        _currentHealth.OnValueChanged -= HandleHealthChanged;
     }
 
     private void HandleHealthChanged(int previousValue, int newValue)
@@ -138,17 +138,17 @@ public class PlayerHealth : NetworkBehaviour
 
 ```csharp
 // Correct NetworkVariable declarations
-private NetworkVariable<int> m_Score = new NetworkVariable<int>(
+private NetworkVariable<int> _score = new NetworkVariable<int>(
     0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
-private NetworkVariable<float> m_Health = new NetworkVariable<float>(
+private NetworkVariable<float> _health = new NetworkVariable<float>(
     100f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
-private NetworkVariable<Vector3> m_TargetPosition = new NetworkVariable<Vector3>(
+private NetworkVariable<Vector3> _targetPosition = new NetworkVariable<Vector3>(
     Vector3.zero, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
 // Avoid
-private NetworkVariable<string> m_PlayerName; // string is not supported
+private NetworkVariable<string> _playerName; // string is not supported
 ```
 
 # ServerRpc and ClientRpc
@@ -205,7 +205,7 @@ public class PlayerController : NetworkBehaviour
         // Only the owner processes input
         if (!IsOwner) return;
 
-        Vector2 moveInput = m_CachedMove; // from Input System callbacks
+        Vector2 moveInput = _cachedMove; // from Input System callbacks
         MovePlayerServerRpc(moveInput);
     }
 
@@ -233,7 +233,7 @@ public class PlayerController : NetworkBehaviour
 // Server-side spawner
 public class EnemySpawner : NetworkBehaviour
 {
-    [SerializeField] private GameObject m_EnemyPrefab;
+    [SerializeField] private GameObject _enemyPrefab;
 
     public void SpawnEnemy(Vector3 position)
     {
@@ -243,7 +243,7 @@ public class EnemySpawner : NetworkBehaviour
             return;
         }
 
-        GameObject instance = Instantiate(m_EnemyPrefab, position, Quaternion.identity);
+        GameObject instance = Instantiate(_enemyPrefab, position, Quaternion.identity);
         NetworkObject netObj = instance.GetComponent<NetworkObject>();
         netObj.Spawn(); // Replicates to all connected clients
     }
@@ -262,7 +262,7 @@ public class EnemySpawner : NetworkBehaviour
 
 - ✅ Add `NetworkTransform` to synchronise `Transform` (position, rotation, scale) across the network.
 - ✅ Disable axes you do not need in `NetworkTransform` — synchronising unused axes wastes bandwidth.
-- ✅ Set `NetworkTransform.AuthorityMode` to `Server` for server-authoritative movement and `Owner` for client-authoritative (with lag compensation).
+- ✅ NGO 1.x `NetworkTransform` is server-authoritative by default; set `ServerAuth = false` (NGO 1.x field name; renamed `AuthorityMode` in NGO 2.x) for client-authoritative movement with lag compensation.
 - ✅ Add `NetworkAnimator` to synchronise `Animator` state across the network.
 - ❌ Never manually synchronise `transform.position` via `NetworkVariable<Vector3>` when `NetworkTransform` is present — they will conflict.
 - ❌ Do not use `NetworkAnimator` for parameters set every frame — it generates heavy traffic. Drive animations from `NetworkVariable` state changes instead when possible.
@@ -327,21 +327,21 @@ public class NetworkedItem : NetworkBehaviour
 ```csharp
 public class PredictedPlayerMovement : NetworkBehaviour
 {
-    [SerializeField] private float m_Speed = 5f;
+    [SerializeField] private float _speed = 5f;
 
-    private Vector2 m_Input;
+    private Vector2 _input;
 
     private void Update()
     {
         if (!IsOwner) return;
 
         // Apply locally for instant response
-        Vector3 localMove = new Vector3(m_Input.x, 0f, m_Input.y) * m_Speed * Time.deltaTime;
+        Vector3 localMove = new Vector3(_input.x, 0f, _input.y) * _speed * Time.deltaTime;
         transform.position += localMove;
 
         // Send to server for authoritative processing
-        if (m_Input != Vector2.zero)
-            SendInputServerRpc(m_Input);
+        if (_input != Vector2.zero)
+            SendInputServerRpc(_input);
     }
 
     [ServerRpc]
@@ -349,7 +349,7 @@ public class PredictedPlayerMovement : NetworkBehaviour
     {
         // Server applies the same movement
         // NetworkTransform will correct any divergence on the client
-        Vector3 serverMove = new Vector3(input.x, 0f, input.y) * m_Speed * Time.deltaTime;
+        Vector3 serverMove = new Vector3(input.x, 0f, input.y) * _speed * Time.deltaTime;
         transform.position += serverMove;
     }
 }

@@ -6,7 +6,7 @@ namespace UnityBestPractices.Editor.Validator
     public class ProjectSettingsValidator : IValidator
     {
         public string Name => "Project Settings";
-        public string Description => "Checks for recommended Unity 6 project settings";
+        public string Description => "Checks for recommended project settings";
 
         public ValidationResult Validate()
         {

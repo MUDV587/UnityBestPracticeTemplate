@@ -1,11 +1,11 @@
 # Unity UI Toolkit — Complete Reference
 
-**Target: Unity 6.3.4f1 exclusively.** All APIs here are Unity 6.3. Do not use or reference pre-Unity 6 alternatives.
+**Target: Unity 2022.3 LTS.** All APIs here are Unity 2022.3. Do not use Unity 6-only APIs (`[UxmlElement]`, runtime data binding, etc.) — they do not exist on 2022.3 and will not compile.
 
-> For C# code style within UI controllers, follow the conventions in `CLAUDE.md` (`m_` prefix, PascalCase properties, Allman braces, etc.)
+> For C# code style within UI controllers, follow the conventions in `CLAUDE.md` (`_camelCase` private/protected fields, PascalCase constants and properties, Allman braces, etc.)
 
 Official documentation (fetch on demand if an API is not covered here):
-→ https://docs.unity3d.com/6000.3/Documentation/Manual/UIElements.html
+→ https://docs.unity3d.com/2022.3/Documentation/Manual/UIElements.html
 
 ---
 
@@ -21,8 +21,8 @@ Official documentation (fetch on demand if an API is not covered here):
 8. [Transitions & Animations](#transitions--animations)
 9. [UXML Structure & Best Practices](#uxml-structure--best-practices)
 10. [UXML Elements Cheat Sheet](#uxml-elements-cheat-sheet)
-11. [Data Binding (Unity 6+)](#data-binding-unity-6)
-12. [Custom VisualElements — Unity 6 API](#custom-visualelements--unity-6-api)
+11. [Runtime Data Binding — Not Available on 2022.3](#runtime-data-binding--not-available-on-unity-20223)
+12. [Custom VisualElements — Unity 2022.3 API](#custom-visualelements--unity-20223-api)
 13. [Querying Elements](#querying-elements)
 14. [Show/Hide Patterns](#showhide-patterns)
 15. [Button & Event Handling](#button--event-handling)
@@ -217,19 +217,19 @@ Pattern: `block-name__element-name--modifier-name`
 
 ```csharp
 // Centralize selectors as constants to avoid typos
-private const string k_navbarMenu = "navbar-menu";
-private const string k_shopButton = "navbar-menu__shop-button";
-private const string k_settingsButton = "navbar-menu__settings-button";
+private const string NavbarMenu = "navbar-menu";
+private const string ShopButton = "navbar-menu__shop-button";
+private const string SettingsButton = "navbar-menu__settings-button";
 
 // Usage
-var navbar = root.Q<VisualElement>(k_navbarMenu);
-var shopButton = root.Q<Button>(k_shopButton);
+var navbar = root.Q<VisualElement>(NavbarMenu);
+var shopButton = root.Q<Button>(ShopButton);
 ```
 
 ### Toggling Classes from C#
 
 ```csharp
-var btn = root.Q<Button>(k_shopButton);
+var btn = root.Q<Button>(ShopButton);
 
 // Add/remove modifiers
 btn.AddToClassList("button--primary");
@@ -579,12 +579,13 @@ translate: 10px 20px;
 - **`class`**: BEM for reusable styles (`card`, `card__title`, `button--primary`)
 - **Files**: PascalCase (`MainMenu.uxml`, `InventoryPanel.uss`)
 
-### Data Binding Setup in UXML
+### Populating Elements from C#
 
-```xml
-<ui:VisualElement data-source-type="MyDataClass, Assembly-CSharp" name="data-root">
-    <ui:Label binding-path="PropertyName" />
-</ui:VisualElement>
+Runtime data binding (`data-source-type` / `binding-path`) is Unity 6-only — on 2022.3, give elements `name` attributes and populate them in the View:
+
+```csharp
+_nameLabel = root.Q<Label>("property-name");
+_nameLabel.text = myData.PropertyName;
 ```
 
 ---
@@ -875,8 +876,8 @@ Virtualized list for displaying large data sets efficiently. Populated via C# wi
 ```csharp
 var listView = root.Q<ListView>("inventory-list");
 listView.makeItem = () => new Label();
-listView.bindItem = (element, index) => ((Label)element).text = m_items[index].Name;
-listView.itemsSource = m_items;
+listView.bindItem = (element, index) => ((Label)element).text = _items[index].Name;
+listView.itemsSource = _items;
 
 // Refresh when data changes
 listView.RefreshItems();
@@ -900,7 +901,7 @@ treeView.bindItem = (element, index) =>
     var item = treeView.GetItemDataForIndex<FileItem>(index);
     ((Label)element).text = item.Name;
 };
-treeView.SetRootItems(m_rootItems);
+treeView.SetRootItems(_rootItems);
 ```
 
 #### MultiColumnListView
@@ -936,8 +937,8 @@ Table-like list with multiple sortable columns.
 var table = root.Q<MultiColumnListView>("data-table");
 table.columns["name-column"].makeCell = () => new Label();
 table.columns["name-column"].bindCell = (element, index) =>
-    ((Label)element).text = m_data[index].Name;
-table.itemsSource = m_data;
+    ((Label)element).text = _data[index].Name;
+table.itemsSource = _data;
 ```
 
 #### MultiColumnTreeView
@@ -1058,155 +1059,139 @@ These elements commonly bind to data properties using `binding-path`:
 
 ---
 
-## Data Binding (Unity 6+)
+## Runtime Data Binding — Not Available on Unity 2022.3
 
-Unity 6 introduced a full **runtime** data binding system. This is entirely separate from `SerializedObject.Bind()` which is **Editor-only**.
+Unity's runtime data binding system (`VisualElement.dataSource`, `binding-path`, `SetBinding()` with `DataBinding`, `[CreateProperty]`) was introduced in Unity 2023.1 / Unity 6. **It does not exist on Unity 2022.3 — code using it will not compile.**
 
-### Reactive Data Source (Runtime Updates)
-
-Implement `INotifyBindablePropertyChanged` for automatic UI updates when data changes at runtime:
+On Unity 2022.3, UI updates must be done manually. Use a simple change event on the data source and re-populate the UI:
 
 ```csharp
-using System;
-using Unity.Properties;
-using UnityEngine;
-using UnityEngine.UIElements; // Required for INotifyBindablePropertyChanged and BindablePropertyChangedEventArgs
-
 [CreateAssetMenu(fileName = "PlayerData", menuName = "Game Data/Player")]
-public class PlayerDataSO : ScriptableObject, INotifyBindablePropertyChanged
+public class PlayerDataSO : ScriptableObject
 {
-    public event EventHandler<BindablePropertyChangedEventArgs> propertyChanged;
+    public event System.Action Changed;
 
-    [SerializeField] private int m_health = 100;
-    [SerializeField] private string m_playerName = "Player";
+    [SerializeField] private int _maxHealth = 100;
+    [SerializeField] private int _health = 100;
+    [SerializeField] private string _playerName = "Player";
 
-    [CreateProperty]
-    public int Health
+    public int MaxHealth => _maxHealth;
+
+    public int CurrentHealth
     {
-        get => m_health;
+        get => _health;
         set
         {
-            if (m_health != value)
+            if (_health != value)
             {
-                m_health = value;
-                Notify(nameof(Health));
+                _health = value;
+                Changed?.Invoke();
             }
         }
     }
 
-    [CreateProperty]
     public string PlayerName
     {
-        get => m_playerName;
+        get => _playerName;
         set
         {
-            if (m_playerName != value)
+            if (_playerName != value)
             {
-                m_playerName = value;
-                Notify(nameof(PlayerName));
+                _playerName = value;
+                Changed?.Invoke();
             }
         }
     }
 
-    private void Notify(string propertyName)
-    {
-        propertyChanged?.Invoke(this, new BindablePropertyChangedEventArgs(propertyName));
-    }
+    public float HealthPercent => _maxHealth > 0 ? (float)_health / _maxHealth * 100f : 0f;
 }
 ```
 
-> ⚠️ **Without `INotifyBindablePropertyChanged`**, bindings only update on initial assignment — UI will not react to subsequent data changes.
+> ⚠️ Without runtime data binding the UI does not update itself — subscribe to the `Changed` event (or call a `Refresh()` method) after data changes.
 
 ### Simple Data Source (Read-Only / One-Time)
 
-For static or one-time binding, `INotifyBindablePropertyChanged` is not required:
+For static or one-time binding, no change event is required — just read the properties when populating the UI:
 
 ```csharp
-using Unity.Properties;
-using UnityEngine;
-
 [CreateAssetMenu(fileName = "ItemData", menuName = "Game Data/Item")]
 public class ItemDataSO : ScriptableObject
 {
-    [SerializeField] private string m_itemName;
-    [SerializeField] private int m_cost;
+    [SerializeField] private string _itemName;
+    [SerializeField] private int _cost;
 
-    [CreateProperty]
-    public string ItemName => m_itemName;
-
-    [CreateProperty]
-    public int Cost => m_cost;
+    public string ItemName => _itemName;
+    public int Cost => _cost;
 }
 ```
 
-This pattern works when data doesn't change at runtime, or when you manually reassign `dataSource` to trigger a refresh.
+Populate the UI once in `OnEnable`; re-read the properties whenever the data changes.
 
-### Binding in UXML
-
-```xml
-<ui:UXML xmlns:ui="UnityEngine.UIElements">
-    <ui:VisualElement data-source-type="PlayerDataSO, Assembly-CSharp" name="player-panel">
-        <ui:Label binding-path="PlayerName" name="name-label" />
-        <ui:ProgressBar binding-path="Health" low-value="0" high-value="100" />
-    </ui:VisualElement>
-</ui:UXML>
-```
-
-> ⚠️ `binding-path` is **case-sensitive** — it must match the exact C# property name.
-
-### Setting the Data Source in C#
+### Populating the UI from C#
 
 ```csharp
 public class UIController : MonoBehaviour
 {
-    [SerializeField] private UIDocument m_uiDocument;
-    [SerializeField] private PlayerDataSO m_playerData;
+    [SerializeField] private UIDocument _uiDocument;
+    [SerializeField] private PlayerDataSO _playerData;
+
+    private Label _nameLabel;
+    private ProgressBar _healthBar;
 
     private void OnEnable()
     {
-        var root = m_uiDocument.rootVisualElement;
-        var playerPanel = root.Q<VisualElement>("player-panel");
+        var root = _uiDocument.rootVisualElement;
 
-        // Assign data source — resolves all UXML binding-path declarations
-        playerPanel.dataSource = m_playerData;
+        // Query and cache elements once (names come from UXML)
+        _nameLabel = root.Q<Label>("name-label");
+        _healthBar = root.Q<ProgressBar>("health-bar");
+
+        _playerData.Changed += Refresh;
+        Refresh();
+    }
+
+    private void OnDisable()
+    {
+        _playerData.Changed -= Refresh;
+    }
+
+    private void Refresh()
+    {
+        _nameLabel.text = _playerData.PlayerName;
+        _healthBar.value = _playerData.HealthPercent;
     }
 }
 ```
 
-### Manual Binding via SetBinding() (C#)
+> ⚠️ Element names are **case-sensitive** — they must match the `name` attribute in UXML exactly.
 
-For programmatic bindings not declared in UXML:
+### Manual Update Pattern (Unity 2022.3)
+
+There is no `SetBinding()` runtime API on Unity 2022.3 — set element properties directly in a `Refresh()` method:
 
 ```csharp
-using UnityEngine.UIElements;
-using Unity.Properties;
+private Label _nameLabel;
+private ProgressBar _healthBar;
 
-var label = root.Q<Label>("player-name");
-
-// One-way: data → UI
-label.SetBinding("text", new DataBinding
+private void Refresh()
 {
-    dataSourcePath = new PropertyPath(nameof(PlayerDataSO.PlayerName)),
-    bindingMode = BindingMode.ToTarget
-});
+    // One-way: data → UI
+    _nameLabel.text = _playerData.PlayerName;
 
-// Two-way binding
-var slider = root.Q<Slider>("health-bar");
-slider.SetBinding("value", new DataBinding
-{
-    dataSourcePath = new PropertyPath(nameof(PlayerDataSO.Health)),
-    bindingMode = BindingMode.TwoWay
-});
+    // UI → data: write back on change events
+    _healthBar.value = _playerData.HealthPercent;
+    _healthBar.RegisterValueChangedCallback(evt => _playerData.CurrentHealth = Mathf.RoundToInt(evt.newValue));
+}
 ```
 
-### Binding Modes
+### Update Direction
 
-| Mode | Direction | Use Case |
+| Pattern | Direction | Use Case |
 |---|---|---|
-| `BindingMode.ToTarget` | Data → UI | Display-only (health bar, score display) |
-| `BindingMode.ToSource` | UI → Data | Input that writes back to data |
-| `BindingMode.TwoWay` | Both | Settings, editable fields |
-| `BindingMode.ToTargetOnce` | Data → UI (once) | Initial value only, no further updates |
+| Read in `Refresh()` | Data → UI | Display-only (health bar, score display) |
+| `RegisterValueChangedCallback` | UI → Data | Input that writes back to data |
+| Both | Both | Settings, editable fields |
+| Read once in `OnEnable` | Data → UI (once) | Initial value only, no further updates |
 
 ---
 
@@ -1234,62 +1219,67 @@ field.BindProperty(property);
 rootVisualElement.Add(field);
 ```
 
-For runtime UI, use `SetBinding()` and `binding-path` — see [Data Binding (Unity 6+)](#data-binding-unity-6) above.
+For runtime UI, update elements manually — see [Runtime Data Binding — Not Available on Unity 2022.3](#runtime-data-binding--not-available-on-unity-20223) above.
 
 ---
 
-## Custom VisualElements — Unity 6 API
+## Custom VisualElements — Unity 2022.3 API
 
-Unity 6 replaced the old `UxmlFactory`/`UxmlTraits` registration system entirely.
+On Unity 2022.3, custom elements are registered for UXML with `UxmlFactory` / `UxmlTraits`. The `[UxmlElement]` / `[UxmlAttribute]` attributes are Unity 6+ and **do not exist on 2022.3**.
 
-❌ **Never use this — deprecated, generates compiler warnings in Unity 6:**
-```csharp
-// Pre-Unity 6 — do not write this
-public new class UxmlFactory : UxmlFactory<MyElement, UxmlTraits> { }
-public new class UxmlTraits : VisualElement.UxmlTraits
-{
-    public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc) { }
-}
-```
-
-✅ **Always use this — Unity 6.3 API:**
+✅ **Use this — Unity 2022.3 API:**
 ```csharp
 using UnityEngine.UIElements;
 
 /// <summary>
 /// A custom health bar element usable directly in UXML.
 /// </summary>
-[UxmlElement]
-public partial class HealthBar : VisualElement
+public class HealthBar : VisualElement
 {
-    // Exposed as an attribute in UXML — Unity 6.3 generates the registration code automatically
-    [UxmlAttribute]
-    public float maxHealth { get; set; } = 100f;
+    public new class UxmlFactory : UxmlFactory<HealthBar, UxmlTraits> { }
 
-    [UxmlAttribute]
+    public new class UxmlTraits : VisualElement.UxmlTraits
+    {
+        private readonly UxmlFloatAttributeDescription _maxHealth =
+            new UxmlFloatAttributeDescription { name = "max-health", defaultValue = 100f };
+
+        private readonly UxmlStringAttributeDescription _label =
+            new UxmlStringAttributeDescription { name = "label", defaultValue = "HP" };
+
+        public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+        {
+            base.Init(ve, bag, cc);
+
+            var element = (HealthBar)ve;
+            element.maxHealth = _maxHealth.GetValueFromBag(bag, cc);
+            element.label = _label.GetValueFromBag(bag, cc);
+        }
+    }
+
+    public float maxHealth { get; set; } = 100f;
     public string label { get; set; } = "HP";
 
-    private Label m_label;
-    private VisualElement m_fill;
+    private Label _label;
+    private VisualElement _fill;
 
     public HealthBar()
     {
         AddToClassList("health-bar");
 
-        m_label = new Label(label);
-        m_label.AddToClassList("health-bar__label");
+        _label = new Label(label);
+        _label.AddToClassList("health-bar__label");
 
-        m_fill = new VisualElement();
-        m_fill.AddToClassList("health-bar__fill");
+        _fill = new VisualElement();
+        _fill.AddToClassList("health-bar__fill");
 
-        Add(m_label);
-        Add(m_fill);
+        Add(_label);
+        Add(_fill);
     }
 
     public void SetValue(float current)
     {
         float pct = Mathf.Clamp01(current / maxHealth) * 100f;
-        m_fill.style.width = Length.Percent(pct);
+        _fill.style.width = Length.Percent(pct);
     }
 }
 ```
@@ -1347,24 +1337,24 @@ root.Q<Button>("optional-button")?.SetEnabled(false);
 
 ```csharp
 // ✅ Good — cached in OnEnable (preferred for UIDocument MonoBehaviours)
-private Button m_submitButton;
+private Button _submitButton;
 
 private void OnEnable()
 {
-    var root = m_uiDocument.rootVisualElement;
-    m_submitButton = root.Q<Button>("submit-button");
-    m_submitButton.clicked += OnSubmitClicked;
+    var root = _uiDocument.rootVisualElement;
+    _submitButton = root.Q<Button>("submit-button");
+    _submitButton.clicked += OnSubmitClicked;
 }
 
 private void OnDisable()
 {
-    m_submitButton.clicked -= OnSubmitClicked;
+    _submitButton.clicked -= OnSubmitClicked;
 }
 
 // ❌ Bad — queried every frame
 private void Update()
 {
-    m_uiDocument.rootVisualElement.Q<Button>("submit-button").SetEnabled(false);
+    _uiDocument.rootVisualElement.Q<Button>("submit-button").SetEnabled(false);
 }
 ```
 
@@ -1375,14 +1365,14 @@ private void Update()
 //    UIDocument is guaranteed to have its rootVisualElement populated here.
 private void OnEnable()
 {
-    var root = m_uiDocument.rootVisualElement;
-    m_button = root.Q<Button>("my-button");
-    m_button.clicked += OnButtonClicked;
+    var root = _uiDocument.rootVisualElement;
+    _button = root.Q<Button>("my-button");
+    _button.clicked += OnButtonClicked;
 }
 
 private void OnDisable()
 {
-    m_button.clicked -= OnButtonClicked;
+    _button.clicked -= OnButtonClicked;
 }
 
 /// ⚠️ Awake: querying rootVisualElement here works if UIDocument is on the
@@ -1391,7 +1381,7 @@ private void OnDisable()
 //    Prefer OnEnable so queries and event registration stay together.
 private void Awake()
 {
-    m_uiDocument = GetComponent<UIDocument>(); // Component lookup is fine in Awake
+    _uiDocument = GetComponent<UIDocument>(); // Component lookup is fine in Awake
 }
 
 // ✅ CreateGUI is the correct method for EditorWindows
@@ -1418,7 +1408,7 @@ element.style.display = DisplayStyle.Flex;
 // Helper method pattern
 public void SetPanelVisible(bool isVisible)
 {
-    m_panel.style.display = isVisible ? DisplayStyle.Flex : DisplayStyle.None;
+    _panel.style.display = isVisible ? DisplayStyle.Flex : DisplayStyle.None;
 }
 ```
 
@@ -1441,19 +1431,19 @@ element.style.visibility = Visibility.Visible;
 ### Button Click Events
 
 ```csharp
-private Button m_actionButton;
+private Button _actionButton;
 
 private void OnEnable()
 {
-    var root = m_uiDocument.rootVisualElement;
-    m_actionButton = root.Q<Button>("action-button");
-    m_actionButton.clicked += OnActionButtonClicked;
+    var root = _uiDocument.rootVisualElement;
+    _actionButton = root.Q<Button>("action-button");
+    _actionButton.clicked += OnActionButtonClicked;
 }
 
 private void OnDisable()
 {
     // Always unsubscribe to prevent memory leaks
-    m_actionButton.clicked -= OnActionButtonClicked;
+    _actionButton.clicked -= OnActionButtonClicked;
 }
 
 private void OnActionButtonClicked()
@@ -1518,18 +1508,18 @@ The project's `EventRegistry` utility (in `GameSystems` namespace) provides cent
 ```csharp
 using GameSystems;
 
-private readonly EventRegistry m_eventRegistry = new();
+private readonly EventRegistry _eventRegistry = new();
 
 private void OnEnable()
 {
-    m_eventRegistry.RegisterCallback<ClickEvent>(m_submitButton, OnSubmitClicked);
-    m_eventRegistry.RegisterCallback<ClickEvent>(m_cancelButton, OnCancelClicked);
-    m_eventRegistry.RegisterValueChangedCallback<float>(m_volumeSlider, OnVolumeChanged);
+    _eventRegistry.RegisterCallback<ClickEvent>(_submitButton, OnSubmitClicked);
+    _eventRegistry.RegisterCallback<ClickEvent>(_cancelButton, OnCancelClicked);
+    _eventRegistry.RegisterValueChangedCallback<float>(_volumeSlider, OnVolumeChanged);
 }
 
 private void OnDisable()
 {
-    m_eventRegistry.Dispose(); // Unregisters everything at once
+    _eventRegistry.Dispose(); // Unregisters everything at once
 }
 ```
 
@@ -1542,27 +1532,27 @@ private void OnDisable()
 ```csharp
 public class CardGridController : MonoBehaviour
 {
-    [SerializeField] private UIDocument m_uiDocument;
-    [SerializeField] private VisualTreeAsset m_cardTemplate;
-    [SerializeField] private List<CardDataSO> m_cards;
+    [SerializeField] private UIDocument _uiDocument;
+    [SerializeField] private VisualTreeAsset _cardTemplate;
+    [SerializeField] private List<CardDataSO> _cards;
 
-    private VisualElement m_cardContainer;
+    private VisualElement _cardContainer;
 
     private void OnEnable()
     {
-        var root = m_uiDocument.rootVisualElement;
-        m_cardContainer = root.Q<VisualElement>("card-container");
+        var root = _uiDocument.rootVisualElement;
+        _cardContainer = root.Q<VisualElement>("card-container");
         PopulateCards();
     }
 
     private void PopulateCards()
     {
-        m_cardContainer.Clear();
+        _cardContainer.Clear();
 
-        foreach (var cardData in m_cards)
+        foreach (var cardData in _cards)
         {
             // Instantiate template
-            var cardElement = m_cardTemplate.Instantiate();
+            var cardElement = _cardTemplate.Instantiate();
 
             // Populate via queries or data binding
             cardElement.Q<Label>("card-title").text = cardData.Title;
@@ -1577,7 +1567,7 @@ public class CardGridController : MonoBehaviour
                 actionButton.clicked += () => OnCardActionClicked(data);
             }
 
-            m_cardContainer.Add(cardElement);
+            _cardContainer.Add(cardElement);
         }
     }
 
@@ -1593,21 +1583,21 @@ public class CardGridController : MonoBehaviour
 ```csharp
 private void SetupListView()
 {
-    m_listView.makeItem = () => m_itemTemplate.Instantiate();
+    _listView.makeItem = () => _itemTemplate.Instantiate();
 
-    m_listView.bindItem = (element, index) =>
+    _listView.bindItem = (element, index) =>
     {
-        var item = m_items[index];
+        var item = _items[index];
         element.Q<Label>("item-name").text = item.ItemName;
         element.Q<Label>("item-cost").text = $"{item.Cost} gold";
         element.dataSource = item;
     };
 
-    m_listView.itemsSource = m_items;
+    _listView.itemsSource = _items;
 }
 
 // Refresh when data changes
-public void RefreshList() => m_listView.RefreshItems();
+public void RefreshList() => _listView.RefreshItems();
 ```
 
 **ListView UXML:**
@@ -1667,17 +1657,17 @@ public void RefreshList() => m_listView.RefreshItems();
 ### C# Tab Events
 
 ```csharp
-private TabView m_tabView;
+private TabView _tabView;
 
 private void OnEnable()
 {
-    m_tabView = root.Q<TabView>("main-tabs");
-    m_tabView.activeTabChanged += OnActiveTabChanged;
+    _tabView = root.Q<TabView>("main-tabs");
+    _tabView.activeTabChanged += OnActiveTabChanged;
 }
 
 private void OnDisable()
 {
-    m_tabView.activeTabChanged -= OnActiveTabChanged;
+    _tabView.activeTabChanged -= OnActiveTabChanged;
 }
 
 private void OnActiveTabChanged(Tab previousTab, Tab newTab)
@@ -1738,9 +1728,9 @@ private void OnActiveTabChanged(Tab previousTab, Tab newTab)
 
 ---
 
-## MVP Design Pattern with Data Binding
+## MVP Design Pattern
 
-This section demonstrates a clean **Model-View-Presenter (MVP)** architecture using Unity 6 runtime data binding, separating data (Model), UI display (View), and game logic (Presenter).
+This section demonstrates a clean **Model-View-Presenter (MVP)** architecture on Unity 2022.3 (manual UI refresh — there is no runtime data binding), separating data (Model), UI display (View), and game logic (Presenter).
 
 ### View Naming Convention
 
@@ -1775,12 +1765,12 @@ This section demonstrates a clean **Model-View-Presenter (MVP)** architecture us
 │                         ARCHITECTURE                            │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
-│  ┌──────────────┐    dataSource    ┌──────────────────────┐    │
+│  ┌──────────────┐   Refresh() /   ┌──────────────────────┐    │
 │  │    MODEL     │ ───────────────▶ │        VIEW          │    │
-│  │ (Data Class) │                  │ (MonoBehaviour +     │    │
+│  │ (Data Class) │   Changed event │ (MonoBehaviour +     │    │
 │  │              │ ◀─────────────── │  UIDocument + UXML)  │    │
-│  └──────────────┘  INotifyBindable │                      │    │
-│         ▲          PropertyChanged └──────────────────────┘    │
+│  └──────────────┘                  │                      │    │
+│         ▲                          └──────────────────────┘    │
 │         │                                    │                  │
 │         │ Modifies                           │ User Input       │
 │         │                                    ▼                  │
@@ -1798,113 +1788,76 @@ This section demonstrates a clean **Model-View-Presenter (MVP)** architecture us
 
 ```csharp
 // PlayerStatsModel.cs
-using System;
-using Unity.Properties;
 using UnityEngine;
-using UnityEngine.UIElements; // Required for INotifyBindablePropertyChanged and BindablePropertyChangedEventArgs
 
 namespace Game.Models
 {
     /// <summary>
-    /// Model: Holds player stats data with reactive binding support.
+    /// Model: Holds player stats data. Raises <see cref="Changed"/> so views can refresh manually.
     /// </summary>
     [CreateAssetMenu(fileName = "PlayerStats", menuName = "Game Data/Player Stats")]
-    public class PlayerStatsModel : ScriptableObject, INotifyBindablePropertyChanged
+    public class PlayerStatsModel : ScriptableObject
     {
-        public event EventHandler<BindablePropertyChangedEventArgs> propertyChanged;
+        public event System.Action Changed;
 
         [Header("Stats Configuration")]
-        [SerializeField] private int m_maxHealth = 100;
-        [SerializeField] private int m_maxStamina = 100;
+        [SerializeField] private int _maxHealth = 100;
+        [SerializeField] private int _maxStamina = 100;
 
         [Header("Current Values")]
-        [SerializeField] private int m_currentHealth = 100;
-        [SerializeField] private int m_currentStamina = 100;
-        [SerializeField] private int m_gold = 0;
-        [SerializeField] private string m_playerName = "Hero";
+        [SerializeField] private int _currentHealth = 100;
+        [SerializeField] private int _currentStamina = 100;
+        [SerializeField] private int _gold = 0;
+        [SerializeField] private string _playerName = "Hero";
 
-        [CreateProperty]
-        public int MaxHealth => m_maxHealth;
+        public int MaxHealth => _maxHealth;
+        public int MaxStamina => _maxStamina;
+        public int Gold => _gold;
+        public string PlayerName => _playerName;
 
-        [CreateProperty]
-        public int MaxStamina => m_maxStamina;
-
-        [CreateProperty]
         public int CurrentHealth
         {
-            get => m_currentHealth;
+            get => _currentHealth;
             set
             {
-                int clampedValue = Mathf.Clamp(value, 0, m_maxHealth);
-                if (m_currentHealth != clampedValue)
+                int clampedValue = Mathf.Clamp(value, 0, _maxHealth);
+                if (_currentHealth != clampedValue)
                 {
-                    m_currentHealth = clampedValue;
-                    Notify(nameof(CurrentHealth));
-                    Notify(nameof(HealthPercent)); // Notify derived property too
+                    _currentHealth = clampedValue;
+                    Changed?.Invoke();
                 }
             }
         }
 
-        [CreateProperty]
         public int CurrentStamina
         {
-            get => m_currentStamina;
+            get => _currentStamina;
             set
             {
-                int clampedValue = Mathf.Clamp(value, 0, m_maxStamina);
-                if (m_currentStamina != clampedValue)
+                int clampedValue = Mathf.Clamp(value, 0, _maxStamina);
+                if (_currentStamina != clampedValue)
                 {
-                    m_currentStamina = clampedValue;
-                    Notify(nameof(CurrentStamina));
-                    Notify(nameof(StaminaPercent));
-                }
-            }
-        }
-
-        [CreateProperty]
-        public int Gold
-        {
-            get => m_gold;
-            set
-            {
-                if (m_gold != value)
-                {
-                    m_gold = Mathf.Max(0, value);
-                    Notify(nameof(Gold));
-                }
-            }
-        }
-
-        [CreateProperty]
-        public string PlayerName
-        {
-            get => m_playerName;
-            set
-            {
-                if (m_playerName != value)
-                {
-                    m_playerName = value;
-                    Notify(nameof(PlayerName));
+                    _currentStamina = clampedValue;
+                    Changed?.Invoke();
                 }
             }
         }
 
         // Derived properties for progress bars (0-100 range)
-        [CreateProperty]
-        public float HealthPercent => m_maxHealth > 0 ? (float)m_currentHealth / m_maxHealth * 100f : 0f;
+        public float HealthPercent => _maxHealth > 0 ? (float)_currentHealth / _maxHealth * 100f : 0f;
+        public float StaminaPercent => _maxStamina > 0 ? (float)_currentStamina / _maxStamina * 100f : 0f;
 
-        [CreateProperty]
-        public float StaminaPercent => m_maxStamina > 0 ? (float)m_currentStamina / m_maxStamina * 100f : 0f;
-
-        private void Notify(string propertyName)
+        public void AddGold(int amount)
         {
-            propertyChanged?.Invoke(this, new BindablePropertyChangedEventArgs(propertyName));
+            _gold = Mathf.Max(0, _gold + amount);
+            Changed?.Invoke();
         }
 
         public void ResetStats()
         {
-            CurrentHealth = m_maxHealth;
-            CurrentStamina = m_maxStamina;
+            _currentHealth = _maxHealth;
+            _currentStamina = _maxStamina;
+            Changed?.Invoke();
         }
     }
 }
@@ -1927,62 +1880,89 @@ namespace Game.Views
     public class PlayerStatsView : MonoBehaviour
     {
         [Header("Data Source")]
-        [SerializeField] private PlayerStatsModel m_playerStats;
+        [SerializeField] private PlayerStatsModel _playerStats;
 
         [Header("References")]
-        [SerializeField] private PlayerStatsPresenter m_presenter;
+        [SerializeField] private PlayerStatsPresenter _presenter;
 
-        private UIDocument m_uiDocument;
-        private VisualElement m_rootPanel;
-        private Button m_healButton;
-        private Button m_damageButton;
-        private Button m_restButton;
+        private UIDocument _uiDocument;
+        private VisualElement _rootPanel;
+        private Label _playerNameLabel;
+        private ProgressBar _healthBar;
+        private Label _healthText;
+        private ProgressBar _staminaBar;
+        private Label _staminaText;
+        private Label _goldValue;
+        private Button _healButton;
+        private Button _damageButton;
+        private Button _restButton;
 
         // EventRegistry handles cleanup automatically — avoids lambda unregister issues
-        private readonly EventRegistry m_eventRegistry = new();
+        private readonly EventRegistry _eventRegistry = new();
 
         private void Awake()
         {
-            m_uiDocument = GetComponent<UIDocument>();
+            _uiDocument = GetComponent<UIDocument>();
         }
 
         private void OnEnable()
         {
             // Query elements in OnEnable — UIDocument is guaranteed ready here
-            var root = m_uiDocument.rootVisualElement;
-            m_rootPanel = root.Q<VisualElement>("player-stats-panel");
+            var root = _uiDocument.rootVisualElement;
+            _rootPanel = root.Q<VisualElement>("player-stats-panel");
 
-            if (m_rootPanel != null && m_playerStats != null)
+            _playerNameLabel = root.Q<Label>("player-name");
+            _healthBar = root.Q<ProgressBar>("health-bar");
+            _healthText = root.Q<Label>("health-text");
+            _staminaBar = root.Q<ProgressBar>("stamina-bar");
+            _staminaText = root.Q<Label>("stamina-text");
+            _goldValue = root.Q<Label>("gold-value");
+
+            _healButton = root.Q<Button>("heal-button");
+            _damageButton = root.Q<Button>("damage-button");
+            _restButton = root.Q<Button>("rest-button");
+
+            if (_healButton != null)
+                _eventRegistry.RegisterCallback<ClickEvent>(_healButton, OnHealClicked);
+            if (_damageButton != null)
+                _eventRegistry.RegisterCallback<ClickEvent>(_damageButton, OnDamageClicked);
+            if (_restButton != null)
+                _eventRegistry.RegisterCallback<ClickEvent>(_restButton, OnRestClicked);
+
+            // Manual refresh — no runtime data binding on Unity 2022.3
+            if (_playerStats != null)
             {
-                m_rootPanel.dataSource = m_playerStats;
+                _playerStats.Changed += Refresh;
+                Refresh();
             }
-
-            m_healButton = root.Q<Button>("heal-button");
-            m_damageButton = root.Q<Button>("damage-button");
-            m_restButton = root.Q<Button>("rest-button");
-
-            if (m_healButton != null)
-                m_eventRegistry.RegisterCallback<ClickEvent>(m_healButton, OnHealClicked);
-            if (m_damageButton != null)
-                m_eventRegistry.RegisterCallback<ClickEvent>(m_damageButton, OnDamageClicked);
-            if (m_restButton != null)
-                m_eventRegistry.RegisterCallback<ClickEvent>(m_restButton, OnRestClicked);
         }
 
         private void OnDisable()
         {
-            m_eventRegistry.Dispose(); // Unregisters all callbacks at once
+            if (_playerStats != null)
+                _playerStats.Changed -= Refresh;
+            _eventRegistry.Dispose(); // Unregisters all callbacks at once
         }
 
-        private void OnHealClicked(ClickEvent evt) => m_presenter?.OnHealClicked();
-        private void OnDamageClicked(ClickEvent evt) => m_presenter?.OnDamageClicked();
-        private void OnRestClicked(ClickEvent evt) => m_presenter?.OnRestClicked();
+        private void Refresh()
+        {
+            _playerNameLabel.text = _playerStats.PlayerName;
+            _healthBar.value = _playerStats.HealthPercent;
+            _healthText.text = _playerStats.CurrentHealth.ToString();
+            _staminaBar.value = _playerStats.StaminaPercent;
+            _staminaText.text = _playerStats.CurrentStamina.ToString();
+            _goldValue.text = _playerStats.Gold.ToString();
+        }
+
+        private void OnHealClicked(ClickEvent evt) => _presenter?.OnHealClicked();
+        private void OnDamageClicked(ClickEvent evt) => _presenter?.OnDamageClicked();
+        private void OnRestClicked(ClickEvent evt) => _presenter?.OnRestClicked();
 
         public void ShowPanel(bool show)
         {
-            if (m_rootPanel != null)
+            if (_rootPanel != null)
             {
-                m_rootPanel.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
+                _rootPanel.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
             }
         }
     }
@@ -2004,26 +1984,26 @@ namespace Game.Presenters
     public class PlayerStatsPresenter : MonoBehaviour
     {
         [Header("Model Reference")]
-        [SerializeField] private PlayerStatsModel m_playerStats;
+        [SerializeField] private PlayerStatsModel _playerStats;
 
         [Header("Game Settings")]
-        [SerializeField] private int m_healAmount = 25;
-        [SerializeField] private int m_damageAmount = 10;
-        [SerializeField] private int m_staminaCost = 15;
+        [SerializeField] private int _healAmount = 25;
+        [SerializeField] private int _damageAmount = 10;
+        [SerializeField] private int _staminaCost = 15;
 
         private void Start()
         {
-            m_playerStats?.ResetStats();
+            _playerStats?.ResetStats();
         }
 
         public void OnHealClicked()
         {
-            if (m_playerStats == null) return;
+            if (_playerStats == null) return;
 
-            if (m_playerStats.CurrentStamina >= m_staminaCost)
+            if (_playerStats.CurrentStamina >= _staminaCost)
             {
-                m_playerStats.CurrentHealth += m_healAmount;
-                m_playerStats.CurrentStamina -= m_staminaCost;
+                _playerStats.CurrentHealth += _healAmount;
+                _playerStats.CurrentStamina -= _staminaCost;
             }
             else
             {
@@ -2033,11 +2013,11 @@ namespace Game.Presenters
 
         public void OnDamageClicked()
         {
-            if (m_playerStats == null) return;
+            if (_playerStats == null) return;
 
-            m_playerStats.CurrentHealth -= m_damageAmount;
+            _playerStats.CurrentHealth -= _damageAmount;
 
-            if (m_playerStats.CurrentHealth <= 0)
+            if (_playerStats.CurrentHealth <= 0)
             {
                 OnPlayerDeath();
             }
@@ -2045,18 +2025,18 @@ namespace Game.Presenters
 
         public void OnRestClicked()
         {
-            if (m_playerStats == null) return;
+            if (_playerStats == null) return;
 
-            m_playerStats.CurrentStamina = m_playerStats.MaxStamina;
+            _playerStats.CurrentStamina = _playerStats.MaxStamina;
         }
 
         public void ApplyDamage(int amount)
         {
-            if (m_playerStats == null) return;
+            if (_playerStats == null) return;
 
-            m_playerStats.CurrentHealth -= amount;
+            _playerStats.CurrentHealth -= amount;
 
-            if (m_playerStats.CurrentHealth <= 0)
+            if (_playerStats.CurrentHealth <= 0)
             {
                 OnPlayerDeath();
             }
@@ -2064,9 +2044,9 @@ namespace Game.Presenters
 
         public void AddGold(int amount)
         {
-            if (m_playerStats == null) return;
+            if (_playerStats == null) return;
 
-            m_playerStats.Gold += amount;
+            _playerStats.AddGold(amount);
         }
 
         private void OnPlayerDeath()
@@ -2084,15 +2064,11 @@ namespace Game.Presenters
 <ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
     <Style src="project://database/Assets/UI/Styles/PlayerStats.uss" />
 
-    <ui:VisualElement name="player-stats-panel"
-                      class="stats-panel"
-                      data-source-type="Game.Models.PlayerStatsModel, Assembly-CSharp">
+    <!-- No binding-path / data-source — Unity 2022.3 has no runtime data binding.
+         The view populates these elements manually in Refresh(). -->
+    <ui:VisualElement name="player-stats-panel" class="stats-panel">
 
-        <ui:Label name="player-name" class="stats-panel__title" binding-path="PlayerName">
-            <Bindings>
-                <ui:DataBinding property="text" binding-mode="ToTarget" />
-            </Bindings>
-        </ui:Label>
+        <ui:Label name="player-name" class="stats-panel__title" text="Hero" />
 
         <!-- Health Bar -->
         <ui:VisualElement class="stats-panel__stat-row">
@@ -2100,19 +2076,8 @@ namespace Game.Presenters
             <ui:ProgressBar name="health-bar"
                             class="stats-panel__progress stats-panel__progress--health"
                             low-value="0"
-                            high-value="100"
-                            binding-path="HealthPercent">
-                <Bindings>
-                    <ui:DataBinding property="value" binding-mode="ToTarget" />
-                </Bindings>
-            </ui:ProgressBar>
-            <ui:Label name="health-text" class="stats-panel__value">
-                <Bindings>
-                    <ui:DataBinding property="text"
-                                    data-source-path="CurrentHealth"
-                                    binding-mode="ToTarget" />
-                </Bindings>
-            </ui:Label>
+                            high-value="100" />
+            <ui:Label name="health-text" class="stats-panel__value" text="100" />
         </ui:VisualElement>
 
         <!-- Stamina Bar -->
@@ -2121,31 +2086,14 @@ namespace Game.Presenters
             <ui:ProgressBar name="stamina-bar"
                             class="stats-panel__progress stats-panel__progress--stamina"
                             low-value="0"
-                            high-value="100"
-                            binding-path="StaminaPercent">
-                <Bindings>
-                    <ui:DataBinding property="value" binding-mode="ToTarget" />
-                </Bindings>
-            </ui:ProgressBar>
-            <ui:Label name="stamina-text" class="stats-panel__value">
-                <Bindings>
-                    <ui:DataBinding property="text"
-                                    data-source-path="CurrentStamina"
-                                    binding-mode="ToTarget" />
-                </Bindings>
-            </ui:Label>
+                            high-value="100" />
+            <ui:Label name="stamina-text" class="stats-panel__value" text="100" />
         </ui:VisualElement>
 
         <!-- Gold Display -->
         <ui:VisualElement class="stats-panel__stat-row">
             <ui:Label text="Gold" class="stats-panel__label" />
-            <ui:Label name="gold-value" class="stats-panel__value stats-panel__value--gold">
-                <Bindings>
-                    <ui:DataBinding property="text"
-                                    data-source-path="Gold"
-                                    binding-mode="ToTarget" />
-                </Bindings>
-            </ui:Label>
+            <ui:Label name="gold-value" class="stats-panel__value stats-panel__value--gold" text="0" />
         </ui:VisualElement>
 
         <!-- Action Buttons -->
@@ -2235,12 +2183,12 @@ namespace Game.Presenters
 
 ### Key Points
 
-1. **Model implements `INotifyBindablePropertyChanged`** — required for automatic UI updates when data changes at runtime
-2. **Use `[CreateProperty]` on all bound properties** — makes properties visible to the binding system
-3. **Call `Notify()` in property setters** — triggers UI updates when values change
-4. **Set `dataSource` in the View** — connects the Model to UXML bindings
+1. **Model raises a `Changed` event** — fires when any displayed value changes
+2. **View subscribes in `OnEnable`, unsubscribes in `OnDisable`** — no leaked subscriptions
+3. **View calls `Refresh()`** — populates all elements from the Model
+4. **Presenter modifies the Model only** — the View updates itself via the `Changed` event
 5. **View forwards user input to Presenter** — maintains separation of concerns
-6. **Presenter modifies Model only** — UI updates automatically via bindings
+6. **No runtime data binding on 2022.3** — `dataSource` / `binding-path` / `[CreateProperty]` are Unity 6-only and will not compile
 
 ---
 
@@ -2259,10 +2207,10 @@ When building state-driven UIs (game menus, HUD systems, multi-panel interfaces)
 ```csharp
 private void ShowHUDLayer(bool show)
 {
-    SetPanelsActive(m_resourceControllerView, show);
-    SetPanelsActive(m_gameTurnControllerView, show);
-    SetPanelsActive(m_logPanelView, show);
-    SetPanelsActive(m_miniMapPanelView, show);
+    SetPanelsActive(_resourceControllerView, show);
+    SetPanelsActive(_gameTurnControllerView, show);
+    SetPanelsActive(_logPanelView, show);
+    SetPanelsActive(_miniMapPanelView, show);
 }
 ```
 
@@ -2276,9 +2224,9 @@ private void ShowHUDLayer(bool show)
 private void ApplyStateToPanels(UIGameState state)
 {
     // Hide all context panels first
-    SetPanelsActive(m_mapTileView, false);
-    SetPanelsActive(m_armyLowerPanelView, false);
-    SetPanelsActive(m_constructionOptionsPanel, false);
+    SetPanelsActive(_mapTileView, false);
+    SetPanelsActive(_armyLowerPanelView, false);
+    SetPanelsActive(_constructionOptionsPanel, false);
 
     // Show HUD in all states except modal
     if (state != UIGameState.ConquestView)
@@ -2288,10 +2236,10 @@ private void ApplyStateToPanels(UIGameState state)
     switch (state)
     {
         case UIGameState.TownView:
-            SetPanelsActive(m_mapTileView, true);
+            SetPanelsActive(_mapTileView, true);
             break;
         case UIGameState.ArmyView:
-            SetPanelsActive(m_armyLowerPanelView, true);
+            SetPanelsActive(_armyLowerPanelView, true);
             break;
         // ... etc
     }
@@ -2311,13 +2259,13 @@ Every `ShowPanel()` method must set `picking-mode` to prevent hidden panels from
 ```csharp
 public override void ShowPanel(bool show)
 {
-    if (m_panel == null) return;  // Defensive null check
+    if (_panel == null) return;  // Defensive null check
 
     // Always set display style
-    m_panel.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
+    _panel.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
 
     // Always set picking mode — this prevents hidden panels from blocking clicks
-    m_panel.pickingMode = show ? PickingMode.Position : PickingMode.Ignore;
+    _panel.pickingMode = show ? PickingMode.Position : PickingMode.Ignore;
 }
 ```
 
@@ -2362,19 +2310,19 @@ When modifying `ApplyStateToPanels()` or extracting layer helpers:
    - EventPopupView shows correctly
 3. **Use defensive null checks** — Always guard against missing elements:
    ```csharp
-   if (m_panel == null) return;
-   m_panel.style.display = ...;
+   if (_panel == null) return;
+   _panel.style.display = ...;
    ```
 4. **Comment state groups** — Mark which panels belong to which layer for clarity:
    ```csharp
    // CONTEXT LAYER: Hide all first
-   SetPanelsActive(m_contextPanel1, false);
+   SetPanelsActive(_contextPanel1, false);
 
    // HUD LAYER: Show persistent
    ShowHUDLayer(true);
 
    // OVERLAY LAYER: Handle modals
-   SetPanelsActive(m_overlayPanel, false);
+   SetPanelsActive(_overlayPanel, false);
    ```
 
 ### Benefits of This Architecture
@@ -2392,36 +2340,36 @@ When modifying `ApplyStateToPanels()` or extracting layer helpers:
 ```csharp
 public class UIGameController : MonoBehaviour
 {
-    [SerializeField] private ResourceControllerView m_resourceView;
-    [SerializeField] private GameTurnControllerView m_turnView;
-    [SerializeField] private LogPanelView m_logView;
-    [SerializeField] private MiniMapView m_miniMapView;
+    [SerializeField] private ResourceControllerView _resourceView;
+    [SerializeField] private GameTurnControllerView _turnView;
+    [SerializeField] private LogPanelView _logView;
+    [SerializeField] private MiniMapView _miniMapView;
 
-    [SerializeField] private MapTileView m_townView;
-    [SerializeField] private ArmyLowerPanelView m_armyView;
-    [SerializeField] private ConstructionsOptionsView m_constructionView;
+    [SerializeField] private MapTileView _townView;
+    [SerializeField] private ArmyLowerPanelView _armyView;
+    [SerializeField] private ConstructionsOptionsView _constructionView;
 
-    [SerializeField] private EventPopupView m_eventPopupView;
-    [SerializeField] private ConquestMapTileView m_conquestView;
+    [SerializeField] private EventPopupView _eventPopupView;
+    [SerializeField] private ConquestMapTileView _conquestView;
 
     private void ShowHUDLayer(bool show)
     {
-        SetPanelsActive(m_resourceView, show);
-        SetPanelsActive(m_turnView, show);
-        SetPanelsActive(m_logView, show);
-        SetPanelsActive(m_miniMapView, show);
+        SetPanelsActive(_resourceView, show);
+        SetPanelsActive(_turnView, show);
+        SetPanelsActive(_logView, show);
+        SetPanelsActive(_miniMapView, show);
     }
 
     private void ApplyStateToPanels(UIGameState state)
     {
         // CONTEXT LAYER: Hide all state-specific panels
-        SetPanelsActive(m_townView, false);
-        SetPanelsActive(m_armyView, false);
-        SetPanelsActive(m_constructionView, false);
+        SetPanelsActive(_townView, false);
+        SetPanelsActive(_armyView, false);
+        SetPanelsActive(_constructionView, false);
 
         // OVERLAY LAYER: Hide modals
-        SetPanelsActive(m_eventPopupView, false);
-        SetPanelsActive(m_conquestView, false);
+        SetPanelsActive(_eventPopupView, false);
+        SetPanelsActive(_conquestView, false);
 
         // HUD LAYER: Show in all states except modal
         if (state != UIGameState.ConquestView)
@@ -2436,19 +2384,19 @@ public class UIGameController : MonoBehaviour
                 // HUD only
                 break;
             case UIGameState.TownView:
-                SetPanelsActive(m_townView, true);
+                SetPanelsActive(_townView, true);
                 break;
             case UIGameState.ArmyView:
-                SetPanelsActive(m_armyView, true);
+                SetPanelsActive(_armyView, true);
                 break;
             case UIGameState.TownConstructionView:
-                SetPanelsActive(m_constructionView, true);
+                SetPanelsActive(_constructionView, true);
                 break;
             case UIGameState.EventPopupView:
-                SetPanelsActive(m_eventPopupView, true);
+                SetPanelsActive(_eventPopupView, true);
                 break;
             case UIGameState.ConquestView:
-                SetPanelsActive(m_conquestView, true);
+                SetPanelsActive(_conquestView, true);
                 break;
         }
     }
@@ -2479,11 +2427,9 @@ public class UIGameController : MonoBehaviour
 | `font-weight: bold;` | `-unity-font-style: bold;` | Different property |
 | `background: url(...)` | `background-image: url(...)` | No shorthand |
 | `element.visible = false` | `element.style.display = DisplayStyle.None` | Use style property |
-| `binding-path="health"` | `binding-path="Health"` | Case-sensitive |
 | `button.onClick += ...` | `button.clicked += ...` | Use `clicked` |
 | `button.enabled = false` | `button.SetEnabled(false)` | Use the method |
-| Missing `[CreateProperty]` | Add `[CreateProperty]` attribute | Required for binding |
-| Missing `INotifyBindablePropertyChanged` | Implement the interface | Required for reactive updates |
+| Using `[CreateProperty]` / `dataSource` / `binding-path` | Don't — Unity 6-only | Use manual `Refresh()` + change event on 2022.3 |
 | `root.Q("name")` | `root.Q<VisualElement>("name")` | Always include type |
 | Querying + subscribing in `Awake` | Query and subscribe in `OnEnable` | Keeps lifecycle consistent; OnEnable pairs with OnDisable for cleanup |
 | Not unsubscribing events | Unsubscribe in `OnDisable` | Memory leaks |
@@ -2492,9 +2438,9 @@ public class UIGameController : MonoBehaviour
 | `navbar-item` | `navbar-menu__item` | Use BEM with `__` |
 | `display: grid` | flexbox only | No CSS grid in USS |
 | `calc(50% - 10px)` | Hardcode or use `flex-grow` | No `calc()` in USS |
-| `UxmlFactory`/`UxmlTraits` | `[UxmlElement]` / `[UxmlAttribute]` | Deprecated in Unity 6 |
+| `[UxmlElement]`/`[UxmlAttribute]` | `UxmlFactory`/`UxmlTraits` | Unity 6-only — use `UxmlFactory` on 2022.3 |
 | `OnDestroy` for runtime MonoBehaviour | `OnDisable` | `OnDestroy` fires too late |
-| `SerializedObject.Bind()` for runtime | `binding-path` + `dataSource` | Editor API only |
+| `SerializedObject.Bind()` for runtime | Manual `Refresh()` pattern | Editor API only on 2022.3 |
 
 ---
 
@@ -2505,9 +2451,9 @@ public class UIGameController : MonoBehaviour
 **Example Silent Fail:**
 ```
 MainPanel.uxml: <VisualElement name="army-recuitment-panel">  <!-- Typo! -->
-C# Code:        m_panel = Q<VisualElement>("army-recruitment-panel");  <!-- Correct spelling -->
-Result:         m_panel = null (silently!)
-Later:          m_panel.Clear() → NullReferenceException 5+ frames later
+C# Code:        _panel = Q<VisualElement>("army-recruitment-panel");  <!-- Correct spelling -->
+Result:         _panel = null (silently!)
+Later:          _panel.Clear() → NullReferenceException 5+ frames later
 ```
 
 The error happens nowhere near the UXML typo, making it hard to debug.
@@ -2521,7 +2467,7 @@ All UI views inherit from `UITKBaseClass`, which provides a safe element query m
 ```csharp
 protected T Q<T>(string name, bool required = false) where T : VisualElement
 {
-    T element = m_rootVisualElement.Q<T>(name);
+    T element = _rootVisualElement.Q<T>(name);
 
     if (element == null)
     {
@@ -2541,10 +2487,10 @@ protected T Q<T>(string name, bool required = false) where T : VisualElement
 protected override void InitializeElements()
 {
     // Critical element — logs ERROR if not found
-    m_armyRecruitPanel = Q<VisualElement>("army-recruitment-panel", required: true);
+    _armyRecruitPanel = Q<VisualElement>("army-recruitment-panel", required: true);
 
     // Optional element — logs WARNING if not found
-    m_closePanelButton = Q<Button>("close-btn", required: false);
+    _closePanelButton = Q<Button>("close-btn", required: false);
 }
 ```
 
@@ -2556,7 +2502,7 @@ This method is called automatically in `OnEnable()` after `InitializeElements()`
 protected override void ValidateElementsInitialized()
 {
     // Critical: entire view breaks without this
-    if (m_armyRecruitPanel == null)
+    if (_armyRecruitPanel == null)
     {
         Debug.LogError(
             "[ArmyRecruitPanel] CRITICAL: Element 'army-recruitment-panel' not found in MainPanel.uxml.\n" +
@@ -2570,7 +2516,7 @@ protected override void ValidateElementsInitialized()
     }
 
     // Non-critical: warn but view might still function
-    if (m_closePanelButton == null)
+    if (_closePanelButton == null)
         Debug.LogWarning("[ArmyRecruitPanel] Element 'close-btn' not found.", this);
 }
 ```
@@ -2582,20 +2528,20 @@ Every view should follow this pattern:
 ```csharp
 public class MyView : UITKBaseClass
 {
-    private VisualElement m_mainPanel;
-    private Button m_actionButton;
+    private VisualElement _mainPanel;
+    private Button _actionButton;
 
     protected override void InitializeElements()
     {
         // Use Q<>() for all queries — it logs errors automatically
-        m_mainPanel = Q<VisualElement>("my-panel", required: true);
-        m_actionButton = Q<Button>("action-btn", required: false);
+        _mainPanel = Q<VisualElement>("my-panel", required: true);
+        _actionButton = Q<Button>("action-btn", required: false);
     }
 
     protected override void ValidateElementsInitialized()
     {
         // Check critical elements
-        if (m_mainPanel == null)
+        if (_mainPanel == null)
         {
             Debug.LogError("[MyView] Critical element 'my-panel' not found.", this);
             enabled = false;
@@ -2603,27 +2549,27 @@ public class MyView : UITKBaseClass
         }
 
         // Warn about optional elements
-        if (m_actionButton == null)
+        if (_actionButton == null)
             Debug.LogWarning("[MyView] Optional element 'action-btn' not found.", this);
     }
 
     protected override void RegisterCallbacks()
     {
-        if (m_actionButton != null)
-            m_actionButton.clicked += OnActionClicked;
+        if (_actionButton != null)
+            _actionButton.clicked += OnActionClicked;
     }
 
     protected override void UnregisterCallbacks()
     {
-        if (m_actionButton != null)
-            m_actionButton.clicked -= OnActionClicked;
+        if (_actionButton != null)
+            _actionButton.clicked -= OnActionClicked;
     }
 
     public override void ShowPanel(bool show)
     {
-        if (m_mainPanel == null) return;  // Safety check
-        m_mainPanel.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
-        m_mainPanel.pickingMode = show ? PickingMode.Position : PickingMode.Ignore;
+        if (_mainPanel == null) return;  // Safety check
+        _mainPanel.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
+        _mainPanel.pickingMode = show ? PickingMode.Position : PickingMode.Ignore;
     }
 
     private void OnActionClicked()
@@ -2639,7 +2585,7 @@ public class MyView : UITKBaseClass
 1. MainPanel.uxml has typo: `name="army-recuitment-panel"`
 2. Code queries: `Q<VisualElement>("army-recruitment-panel")` → returns `null`
 3. No error logged — silent failure
-4. Later: `m_armyRecruitPanel.Clear()` → **NullReferenceException** (5+ frames later)
+4. Later: `_armyRecruitPanel.Clear()` → **NullReferenceException** (5+ frames later)
 5. Error is far from source, hard to debug
 
 **With Validation System:**
@@ -2661,13 +2607,13 @@ public class MyView : UITKBaseClass
 
 ## Troubleshooting
 
-### Binding Not Updating
+### UI Not Updating After Data Changes
 
-1. ✅ Property has `[CreateProperty]`
-2. ✅ Class implements `INotifyBindablePropertyChanged`
-3. ✅ `Notify()` is called when the property changes
-4. ✅ `dataSource` is assigned in C#
-5. ✅ `binding-path` matches the property name exactly (case-sensitive)
+1. ✅ The View subscribes to the model's `Changed` event in `OnEnable` and unsubscribes in `OnDisable`
+2. ✅ The model raises `Changed` in every property setter
+3. ✅ `Refresh()` is called after subscribing and after every mutation
+4. ✅ Element `name`s match the UXML exactly (case-sensitive)
+5. ✅ Remember: no runtime data binding (`dataSource` / `binding-path`) on 2022.3
 
 ### Element Not Visible
 
@@ -2715,6 +2661,6 @@ public class MyView : UITKBaseClass
 - **UI Builder:** Window → UI Toolkit → UI Builder
 - **Samples:** Window → UI Toolkit → Samples
 - **Debugger:** Window → UI Toolkit → Debugger
-- **Official Documentation:** https://docs.unity3d.com/6000.3/Documentation/Manual/UIElements.html
+- **Official Documentation:** https://docs.unity3d.com/2022.3/Documentation/Manual/UIElements.html
 
-Fetch the official documentation on demand when a question involves an API or behaviour not covered in this file. This reference targets **Unity 6.3.4f1** — do not consult or generate code for older Unity versions.
+Fetch the official documentation on demand when a question involves an API or behaviour not covered in this file. This reference targets **Unity 2022.3 LTS** — do not consult or generate code for Unity 6-only APIs (`[UxmlElement]`, runtime data binding, etc.).

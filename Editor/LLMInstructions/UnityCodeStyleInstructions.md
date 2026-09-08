@@ -38,7 +38,7 @@ Table of contents:
   - [Avoid nesting if statements](#avoid-nesting-if-statements)
   - [Managing String Allocations](#managing-string-allocations)
   - [Collection Type Selection](#collection-type-selection)
-  - [Async \& Awaitable Usage](#async--awaitable-usage)
+  - [Coroutines](#coroutines)
   - [Scriptable Objects](#scriptable-objects)
   - [Animation Parameters, Layers, Tags, Sorting Layers, and Input Action Names](#animation-parameters-layers-tags-sorting-layers-and-input-action-names)
   - [Debugging](#debugging)
@@ -59,11 +59,11 @@ Table of contents:
 
 # Unity Version-Specific Instructions
 
-- ℹ️ This project uses Unity 6.3. Make sure to use the latest sources and documentation that apply to Unity 6 or later versions.
+- ℹ️ This project uses Unity 2022.3 LTS. Use the Unity 2022.3 documentation and APIs — do not use Unity 6-only features (`Awaitable`, runtime data binding, `[UxmlElement]`, etc.).
 - ℹ️ This project uses the newer "Input System" and not the older "Input Manager".
 - ℹ️ This project uses the newer UI Toolkit and not the older UGUI for UI.
 - ℹ️ This project uses the Universal Render Pipeline and not the old Built‑in Render Pipeline.
-- ℹ️ Prefer Unity 6 Awaitables over coroutines for sequencing: `await Awaitable.WaitForSecondsAsync(delay, token);` Guard continuations with `if (this == null || !isActiveAndEnabled) return;`.
+- ℹ️ Prefer coroutines over async/await for Unity sequencing on 2022.3: `yield return new WaitForSeconds(delay);` Guard continuations with `if (this == null || !isActiveAndEnabled) yield break;`.
 - ℹ️ When instantiating frequently, favor `UnityEngine.Pool.ObjectPool<T>` with `actionOnGet`/`actionOnRelease` to toggle active state.
 
 # General Guidelines
@@ -140,6 +140,12 @@ public void ProcessItems ( List<Item>items,int startIndex ) { for(int i=startInd
         #endregion
 ```
 
+### var usage
+- ✅ Use `var` when the type is apparent from the right side of the assignment (e.g., `var player = GetComponent<Player>();`, `var items = new List<Item>();`, `var index = 5;`) — this matches the .NET mainstream style (dotnet/runtime, Visual Studio templates).
+- ✅ Use explicit types when the type is not obvious from the right side (e.g., casts, method results with ambiguous types, or when the literal type differs from the intended type: `double speed = 0.5f;`).
+- ✅ Use `var` for local variables only — always use explicit types for fields (including `[SerializeField]`), properties, and method signatures.
+- ❌ Don't use `var` when it hides the meaning of the value (e.g., `var data = GetData();` where the reader can't tell what `data` is).
+
 ## Comments
 - ✅ Add clarifying comments to most lines for documentation.
 - ✅ Comment intent (“why”) rather than restating code (“what”).
@@ -154,7 +160,7 @@ if (itemCount < processingThreshold)
 }
 
 [Tooltip("Maximum distance the player can travel in one frame")]
-[SerializeField] private float m_maxDeltaMovement = 10f;
+[SerializeField] private float _maxDeltaMovement = 10f;
 ```
 
 # Organize classes by the Unity Script Execution Order
@@ -162,6 +168,8 @@ if (itemCount < processingThreshold)
   - [Using statements](#using-statements)
     - [Namespace](#namespaces)
   - [Fields](#fields)
+    - Order within fields: `const` → `static readonly` → `static` → instance; `[SerializeField]` fields first
+  - Constructors (after fields, before properties)
   - [Properties](#properties)
   - [Events](#events)
   - [MonoBehaviour methods](#monobehaviour-methods)
@@ -175,7 +183,8 @@ if (itemCount < processingThreshold)
     - [LateUpdate\(\)](#lateupdate)
   - Public methods
   - Private methods
-  - Other classes
+  - Other classes (nested)
+- ✅ Within each group, order members by access level: public → internal → protected → private; static members before instance members.
 
 ## Using statements
 
@@ -216,39 +225,48 @@ namespace MyGame.Characters
 }
 ```
 
+## Nullable Reference Types
+
+- ✅ Enable nullable reference types for new code so the compiler catches potential null dereferences.
+- ✅ Add `#nullable enable` at the top of each `.cs` file (or enable it project-wide via `csc.rsp` with `-nullable:enable`).
+- ✅ Annotate members and parameters that can legitimately be null with `?` (e.g., `string?`, `GameObject?`, `Transform?`).
+- ✅ Use the null-forgiving operator (`!`) only when you are certain the value is non-null (e.g., `_cachedReference!`).
+- ⚠️ Unity's engine APIs are not fully nullable-annotated on 2022.3 — expect warnings at engine call sites; keep your own contracts annotated.
+- ❌ Don't disable nullable project-wide just to silence warnings — prefer file-level opt-in so new code stays covered.
+
 ## Fields
 - ✅ Don't omit the private accessor field though technically its implicit. It provides context about the intent.
-- ✅ Use `m_` prefix for private variables, `k_` for constants
-- ✅ Use `m_` prefix for private fields to distinguish them from local variables.
-- ✅ Use `k_` prefix for constants to indicate immutability.
+- ✅ Use `_camelCase` for private and protected fields (instance and static) to distinguish them from local variables.
+- ✅ Use PascalCase for constants and static readonly fields to indicate immutability.
+- ✅ Use PascalCase for public fields.
 - ✅ Use descriptive names that clearly indicate the field's purpose.
 - ❌ Avoid abbreviations unless they are widely understood (e.g., `UI`, `ID`).
-- ✅ Include units in the name if applicable (e.g., `m_speedInMetersPerSecond`).
-- ✅ Prefix Boolean fields with verbs like `is`, `has`, or `can` for clarity (e.g., `m_isActive`, `m_hasPermission`).
-- ❌ Avoid redundancy by not repeating the class name in field names (e.g., use `m_health` instead of `m_playerHealth` in a `Player` class).
+- ✅ Include units in the name if applicable (e.g., `_speedInMetersPerSecond`).
+- ✅ Prefix Boolean fields with verbs like `is`, `has`, or `can` for clarity (e.g., `_isActive`, `_hasPermission`).
+- ❌ Avoid redundancy by not repeating the class name in field names (e.g., use `_health` instead of `_playerHealth` in a `Player` class).
 - ✅ Expose fields in the Inspector with `[SerializeField]`.
 - ✅ Use properties when you need to access them from other classes.
 
 ```csharp
-// Use `m_` prefix for private variables
-private int m_health;
+// _camelCase for private fields
+private int _health;
 
-// Static variable with s_ prefix
-private static int s_sharedCount;
+// _camelCase for static fields
+private static int _sharedCount;
 
-// Constant with k_ prefix
-private const int k_maxCount = 100;
+// PascalCase for constants
+private const int MaxCount = 100;
 
 // Use [SerializeField] rather than exposing your field publicly; keep it private or make it a property
-[SerializeField] private int m_health;
+[SerializeField] private int _health;
 
 // Specify the unit used to eliminate guessing. Favor readability over brevity
-private int m_elapsedTimeInHours;
-private int m_elapsedTimeInDays;
-private int m_elapsedTimeInSeconds;
+private int _elapsedTimeInHours;
+private int _elapsedTimeInDays;
+private int _elapsedTimeInSeconds;
 
 // Prefix Booleans with a verb like "is" to make their meaning apparent
-[SerializeField] private bool m_isPlayerDead;
+[SerializeField] private bool _isPlayerDead;
 
 ```
 
@@ -256,7 +274,7 @@ private int m_elapsedTimeInSeconds;
 - ✅ Place properties after fields and before MonoBehaviour methods as per your class organization.
 - ✅ Use PascalCase for properties and avoid prefixes/suffixes.
 - ✅ Prefer verb-like names for boolean properties (Is/Has/Can) (e.g., IsGrounded, HasHealtPack, CanJump).
-- ❌ Do not serialize properties. Instead use [SerializeField] private T m_field when you need to expose it in the inspector plus a public property that returns or validates it.
+- ❌ Do not serialize properties. Instead use [SerializeField] private T _field when you need to expose it in the inspector plus a public property that returns or validates it.
 - ✅ Use Properties for accessing or modifying the state of an object. Properties are ideal for lightweight operations with no or minimal side effects.
   Example: Health, Speed, IsGrounded.
 - ℹ️ Use methods for actions or operations. Such as input handling and event-driven behavior. Name appropiate `ApplyDamage(int amount)` instead of `SetHealth(int amount)`.
@@ -264,16 +282,16 @@ private int m_elapsedTimeInSeconds;
 -
 ```csharp
 // Private backing field
-private int m_maxHealth;
+private int _maxHealth;
 
 // Read-only property
-public int MaxHealthReadOnly => m_maxHealth;
+public int MaxHealthReadOnly => _maxHealth;
 
 // Property with full implementation
 public int MaxHealth
 {
-    get => m_maxHealth;
-    set => m_maxHealth = value;
+    get => _maxHealth;
+    set => _maxHealth = value;
 }
 
 // Auto-implemented property
@@ -284,7 +302,7 @@ public Vector2 MovementInput
 {
     set
     {
-        m_forwardMovementInput = value;
+        _forwardMovementInput = value;
         Debug.Log("Movement input set.");
     }
 }
@@ -344,11 +362,11 @@ public struct CustomEventArgs
 // Subscribing to events
 private void OnEnable()
 {
-    m_gameManager.DoorOpened += HandleDoorOpened;
+    _gameManager.DoorOpened += HandleDoorOpened;
 }
 private void OnDisable()
 {
-    m_gameManager.DoorOpened -= HandleDoorOpened;
+    _gameManager.DoorOpened -= HandleDoorOpened;
 }
 
 
@@ -365,7 +383,7 @@ private void OnDisable()
 private void Awake()
 {
     // Cache component references here
-    m_rigidbody = GetComponent<Rigidbody>();
+    _rigidbody = GetComponent<Rigidbody>();
 }
 ```
 
@@ -377,7 +395,7 @@ private void Awake()
 private void Awake()
 {
     // Cache component references here
-    m_rigidbody = GetComponent<Rigidbody>();
+    _rigidbody = GetComponent<Rigidbody>();
 }
 ```
 
@@ -390,7 +408,7 @@ private void Awake()
 private void Start()
 {
     // Use cached references and perform operations that might depend on other components being initialized
-    m_animator.SetTrigger("Initialize");
+    _animator.SetTrigger("Initialize");
 }
 ```
 
@@ -422,7 +440,7 @@ private void FixedUpdate()
 ### Update()
 - ✅ Use Update for regular frame updates (e.g., input handling, non-physics calculations).
 - ✅ Read input, update timers, run non-physics per-frame logic and state machines.
-- ✅ Avoid allocations, use early returns (e.g., if (!m_isActive) return;) and delegate to well-named helper methods.
+- ✅ Avoid allocations, use early returns (e.g., if (!_isActive) return;) and delegate to well-named helper methods.
 - ❌ Never create new collections in Update() but reuse existing ones.
 - ✅ Use early returns to avoid unnecessary processing.
 - ✅ Instead of having logic directly in the Update loop, move it to methods with descriptive names to improve cleanliness and self-documentation
@@ -432,7 +450,7 @@ private void Update()
 {
     // Put all your regular frame logic update code in Update()
 
-    if (!m_isActive) return; // Early return pattern
+    if (!_isActive) return; // Early return pattern
 
     // Move logic to well-named methods
     HandleMovement();
@@ -468,13 +486,13 @@ private void LateUpdate()
 private void Update()
 {
    // Bad - expensive operation every frame
-   var nearbyEnemies = Physics.OverlapSphere(transform.position, m_detectionRadius);
+   var nearbyEnemies = Physics.OverlapSphere(transform.position, _detectionRadius);
 
    // Better - cache and update less frequently
-   if (Time.time > m_nextUpdateTime)
+   if (Time.time > _nextUpdateTime)
    {
        UpdateNearbyEnemies();
-       m_nextUpdateTime = Time.time + m_updateInterval;
+       _nextUpdateTime = Time.time + _updateInterval;
    }
 }
 ```
@@ -495,19 +513,19 @@ private void Update()
 // Action: performs behavior / side effects
 public void Jump()
 {
-    m_rigidbody.AddForce(Vector3.up * m_jumpForce, ForceMode.Impulse);
+    _rigidbody.AddForce(Vector3.up * _jumpForce, ForceMode.Impulse);
 }
 
 // Setter: clearly assigns or updates a value (suitable for input callbacks)
 public void SetMovementInput(Vector2 input)
 {
-    m_forwardMovementInput = input;
+    _forwardMovementInput = input;
 }
 
 // Modifier: transforms or changes state
 public void ChangeHealth(int amount)
 {
-    m_health += amount;
+    _health += amount;
 }
 
 // Use verb names that describe what the method does
@@ -530,11 +548,11 @@ private void HandleTileSelected(MapTile tile)
 // ✅ "Process" for game logic operations (part of game flow, usually turn-based or system-driven)
 private void ProcessTradeIncome()
 {
-    foreach (var relationship in m_relationships)
+    foreach (var relationship in _relationships)
     {
-        if (relationship.InvolvesFaction(m_playerFactionData))
+        if (relationship.InvolvesFaction(_playerFactionData))
         {
-            m_gameResources.ModifyCurrentGold(m_tradeAgreementGold);
+            _gameResources.ModifyCurrentGold(_tradeAgreementGold);
         }
     }
 }
@@ -617,11 +635,11 @@ public enum Direction
     West
 }
 
-private Direction m_currentDirection;
+private Direction _currentDirection;
 
 private void Update()
 {
-    switch (m_currentDirection)
+    switch (_currentDirection)
     {
         case Direction.North:
             // Move north
@@ -704,37 +722,37 @@ public class ScoreManager : MonoBehaviour
 public class EnemyRegistry : MonoBehaviour
 {
     // Initialize with modern syntax using New() (C# 9.0+)
-    [SerializeField] private List<GameObject> m_enemies = new();
+    [SerializeField] private List<GameObject> _enemies = new();
 
     public void Register(GameObject enemy)
     {
-        if (!m_enemies.Contains(enemy))
+        if (!_enemies.Contains(enemy))
         {
-            m_enemies.Add(enemy);
+            _enemies.Add(enemy);
         }
     }
     public void Unregister(GameObject enemy)
     {
-        m_enemies.Remove(enemy);
+        _enemies.Remove(enemy);
     }
 }
 ```
-### Async & Awaitable Usage
-- ✅ Use the Awaitable API (available in Unity 6 and later) with async/await for timed delays, sequencing, or asynchronous workflows that don’t require per-frame iteration. This results in cleaner and more readable code compared to coroutines.
-- ✅ Name async methods with the Async suffix (e.g., OpenDoorAsync) and coroutines with the Co suffix (e.g., LoadAssetsCo) to clearly distinguish them.
-- ✅ Use PascalCase and verb-based names for both async and coroutine methods.
-- ✅ Prefer Awaitable and async/await over StartCoroutine for simple delays or sequential logic.
-- ❌ Do not mix Awaitable and coroutines within the same operation—choose one approach per workflow for clarity and maintainability.
-- ✅ Use CancellationToken (for Awaitable) or check this == null to safely handle cancellation and prevent callbacks after an object is destroyed.
+### Coroutines
+- ✅ Use coroutines (`IEnumerator` + `yield return`) for timed delays, sequencing, or asynchronous workflows that don't require per-frame iteration — this is the standard approach on Unity 2022.3 (there is no `Awaitable`).
+- ✅ Name coroutines with the Co suffix (e.g., LoadAssetsCo) and start them with `StartCoroutine(...)`.
+- ✅ Use PascalCase and verb-based names for coroutine methods.
+- ✅ Prefer `StartCoroutine` over async/await for Unity lifecycle-coupled delays — Unity 2022.3 has no `Awaitable`, and awaiting .NET `Task`s requires careful destruction handling.
+- ❌ Do not mix async/await and coroutines within the same operation—choose one approach per workflow for clarity and maintainability.
+- ✅ Guard continuations with `if (this == null || !isActiveAndEnabled) yield break;` to safely stop after the object is destroyed.
 
 ```csharp
-public async Awaitable OpenDoorAsync()
+private IEnumerator OpenDoorCo()
 {
     // Trigger animation or sound
     Debug.Log("Door opening...");
 
     // Wait 2 seconds before completing
-    await Awaitable.WaitForSecondsAsync(2f);
+    yield return new WaitForSeconds(2f);
 
     Debug.Log("Door opened!");
 }
@@ -750,10 +768,30 @@ private IEnumerator LoadAssetsCo()
     Debug.Log("All assets loaded!");
 }
 
-private async void Start()
+private void Start()
 {
-    // Demonstrate timed async call
-    await OpenDoorAsync();
+    // Demonstrate timed coroutine call
+    StartCoroutine(OpenDoorCo());
+}
+```
+
+### Async / Await
+- ✅ Use `async`/`await` for I/O-bound or API-driven operations that return `Task`/`Task<T>` (file I/O, web requests, Addressables `Task`-based APIs such as `LoadAssetAsync(...).Task`).
+- ✅ Name `Task`-returning methods with the `Async` suffix (e.g., `LoadSaveDataAsync()`, `FetchPlayerProfileAsync()`) so callers know the method is awaitable.
+- ❌ Avoid `async void` except for event handlers (UnityEvent or button click callbacks) — exceptions inside `async void` crash the app because nothing can catch them; for everything else return `Task`.
+- ❌ Never block on async work with `.Result`, `.Wait()`, or `.GetAwaiter().GetResult()` — always `await`.
+- ✅ Guard continuations after `await` with `if (this == null) return;` — Unity can destroy the object while the Task is pending (2022.3 has no built-in `destroyCancellationToken`).
+- ✅ Use coroutines for lifecycle-coupled timing and `async`/`await` for I/O — pick one approach per operation; don't mix them inside the same workflow.
+
+```csharp
+private async Task<SaveData> LoadSaveDataAsync()
+{
+    var json = await File.ReadAllTextAsync(savePath);
+
+    // Object may have been destroyed while awaiting
+    if (this == null) return null;
+
+    return JsonUtility.FromJson<SaveData>(json);
 }
 ```
 
@@ -773,15 +811,15 @@ private async void Start()
 [CreateAssetMenu(fileName = "WeaponData", menuName = "Game Data/Weapon", order = 0)]
 public class WeaponDataSO : ScriptableObject
 {
-   [SerializeField] private string m_weaponName;
-   [SerializeField] private int m_damage;
-   [SerializeField] private float m_range;
-   [SerializeField] private GameObject m_projectilePrefab;
+   [SerializeField] private string _weaponName;
+   [SerializeField] private int _damage;
+   [SerializeField] private float _range;
+   [SerializeField] private GameObject _projectilePrefab;
 
-   public string WeaponName => m_weaponName;
-   public int Damage => m_damage;
-   public float Range => m_range;
-   public GameObject ProjectilePrefab => m_projectilePrefab;
+   public string WeaponName => _weaponName;
+   public int Damage => _damage;
+   public float Range => _range;
+   public GameObject ProjectilePrefab => _projectilePrefab;
 }
 ```
 ### Animation Parameters, Layers, Tags, Sorting Layers, and Input Action Names
@@ -815,41 +853,41 @@ public static class InputActions
 }
 
 // Good - constants prevent typos and enable refactoring
-private const string k_isRunningParam = "IsRunning";
-private const string k_speedParam = "Speed";
-private const string k_jumpTriggerParam = "JumpTrigger";
-private const string k_isGroundedParam = "IsGrounded";
-private const string k_attackIndexParam = "AttackIndex";
-private const string k_isDeadParam = "IsDead";
+private const string IsRunningParam = "IsRunning";
+private const string SpeedParam = "Speed";
+private const string JumpTriggerParam = "JumpTrigger";
+private const string IsGroundedParam = "IsGrounded";
+private const string AttackIndexParam = "AttackIndex";
+private const string IsDeadParam = "IsDead";
 
 // Usage - safe and maintainable
-m_animator.SetBool(k_isRunningParam, isMoving);
-m_animator.SetFloat(k_speedParam, currentSpeed);
-m_animator.SetTrigger(k_jumpTriggerParam);
+_animator.SetBool(IsRunningParam, isMoving);
+_animator.SetFloat(SpeedParam, currentSpeed);
+_animator.SetTrigger(JumpTriggerParam);
 
 // Bad - magic strings scattered throughout code (runtime errors possible)
 void UpdateMovement()
 {
-   m_animator.SetBool("IsWalking", isMoving);        // Typo risk
-   m_animator.SetFloat("Spead", currentSpeed);       // Typo - fails silently!
+   _animator.SetBool("IsWalking", isMoving);        // Typo risk
+   _animator.SetFloat("Spead", currentSpeed);       // Typo - fails silently!
 
-   if (m_animator.GetBool("IsWalknig"))              // Another typo
+   if (_animator.GetBool("IsWalknig"))              // Another typo
    {
        // This condition will never be true due to typo
    }
 }
 
 // Good - centralized, safe, maintainable
-private const string k_isWalkingParam = "IsWalking";
-private const string k_speedParam = "Speed";
+private const string IsWalkingParam = "IsWalking";
+private const string SpeedParam = "Speed";
 
 
 void UpdateMovement()
 {
-   m_animator.SetBool(k_isWalkingParam, isMoving);
-   m_animator.SetFloat(k_speedParam, currentSpeed);
+   _animator.SetBool(IsWalkingParam, isMoving);
+   _animator.SetFloat(SpeedParam, currentSpeed);
 
-   if (m_animator.GetBool(k_isWalkingParam))
+   if (_animator.GetBool(IsWalkingParam))
    {
        // Safe - IDE will catch typos at compile time
    }
@@ -896,7 +934,7 @@ Debug.Log("This log only appears in the Editor.");
 #endif
 
 // Null checks can be useful but avoid excessive checks. It can clutter the code.
-if (m_audioSource != null)
+if (_audioSource != null)
 {
    Debug.Log("Audio source is available.", this);
 }
@@ -905,7 +943,7 @@ if (m_audioSource != null)
 [RequireComponent(typeof(AudioSource))]
 public class AudioPlayer : MonoBehaviour
 {
-    private AudioSource m_audioSource;
+    private AudioSource _audioSource;
 }
 
 ```
@@ -924,7 +962,7 @@ public void SaveGame(GameData data)
     try
     {
         string json = JsonUtility.ToJson(data);
-        File.WriteAllText(k_saveFilePath, json);
+        File.WriteAllText(SaveFilePath, json);
     }
     catch (IOException ioEx)
     {
@@ -970,46 +1008,46 @@ public void SaveGame(GameData data)
 // Example of State Pattern for a character controller
 public class PlayerController : MonoBehaviour
 {
-    private PlayerState m_currentState;
+    private PlayerState _currentState;
 
     // State references
-    private IdleState m_idleState;
-    private RunningState m_runningState;
-    private JumpingState m_jumpingState;
+    private IdleState _idleState;
+    private RunningState _runningState;
+    private JumpingState _jumpingState;
 
     private void Awake()
     {
         // Initialize states
-        m_idleState = new IdleState(this);
-        m_runningState = new RunningState(this);
-        m_jumpingState = new JumpingState(this);
+        _idleState = new IdleState(this);
+        _runningState = new RunningState(this);
+        _jumpingState = new JumpingState(this);
 
         // Set default state
-        m_currentState = m_idleState;
+        _currentState = _idleState;
     }
 
     private void Update()
     {
         // Let the current state handle the update
-        m_currentState.Update();
+        _currentState.Update();
     }
 
     public void ChangeState(PlayerState newState)
     {
-        m_currentState.Exit();
-        m_currentState = newState;
-        m_currentState.Enter();
+        _currentState.Exit();
+        _currentState = newState;
+        _currentState.Enter();
     }
 }
 
 // Base state class
 public abstract class PlayerState
 {
-    protected PlayerController m_controller;
+    protected PlayerController _controller;
 
     public PlayerState(PlayerController controller)
     {
-        m_controller = controller;
+        _controller = controller;
     }
 
     public abstract void Enter();
@@ -1020,7 +1058,7 @@ public abstract class PlayerState
 
 ### Object Pooling
 - ✅ Use object pooling for frequently spawned and destroyed objects (e.g., bullets, enemies, particle effects) to reduce runtime allocations and improve performance.
-- ✅ Prefer Unity’s built-in pooling APIs (e.g., UnityEngine.Pool.ObjectPool<T>) in Unity 6 and later, rather than implementing custom pooling logic.
+- ✅ Prefer Unity’s built-in pooling APIs (e.g., UnityEngine.Pool.ObjectPool<T>, available since Unity 2021.2) over implementing custom pooling logic.
 - ✅ Initialize pools at scene load or on demand, and pre-warm with a reasonable number of objects to avoid spikes during gameplay.
 - ✅ Always reset pooled objects’ state (position, rotation, active state, etc.) before reusing them.
 - ✅ Return objects to the pool instead of destroying them; never use Destroy() on pooled objects except during cleanup.
@@ -1035,13 +1073,13 @@ using UnityEngine.Pool;
 
 public class BulletPool : MonoBehaviour
 {
-    [SerializeField] private Bullet m_bulletPrefab;
-    private ObjectPool<Bullet> m_pool;
+    [SerializeField] private Bullet _bulletPrefab;
+    private ObjectPool<Bullet> _pool;
 
     private void Awake()
     {
-        m_pool = new ObjectPool<Bullet>(
-            createFunc: () => Instantiate(m_bulletPrefab),
+        _pool = new ObjectPool<Bullet>(
+            createFunc: () => Instantiate(_bulletPrefab),
             actionOnGet: bullet => bullet.gameObject.SetActive(true),
             actionOnRelease: bullet => bullet.gameObject.SetActive(false),
             actionOnDestroy: bullet => Destroy(bullet.gameObject),
@@ -1053,12 +1091,12 @@ public class BulletPool : MonoBehaviour
 
     public Bullet GetFromPool()
     {
-        return m_pool.Get();
+        return _pool.Get();
     }
 
     public void ReturnToPool(Bullet bullet)
     {
-        m_pool.Release(bullet);
+        _pool.Release(bullet);
     }
 }
 ```
@@ -1203,14 +1241,14 @@ btn.classList.Add("button--small");
 // Proper UI Toolkit event registration
 private void OnEnable()
 {
-   m_button.clicked += OnButtonClicked;
-   m_dropdown.RegisterValueChangedCallback(OnDropdownChanged);
+   _button.clicked += OnButtonClicked;
+   _dropdown.RegisterValueChangedCallback(OnDropdownChanged);
 }
 
 
 private void OnDisable()
 {
-   m_button.clicked -= OnButtonClicked;
-   m_dropdown.UnregisterValueChangedCallback(OnDropdownChanged);
+   _button.clicked -= OnButtonClicked;
+   _dropdown.UnregisterValueChangedCallback(OnDropdownChanged);
 }
 ```

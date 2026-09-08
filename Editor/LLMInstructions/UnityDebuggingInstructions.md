@@ -387,67 +387,63 @@ private async void Start()
 }
 ```
 
-### Awaitable API (Unity 6)
+### Coroutines (Unity 2022.3)
 
 ```csharp
-// Unity 6 preferred pattern: Use Awaitable with destroyCancellationToken
-private async Awaitable DoSomethingAsync()
+// Unity 2022.3 pattern: use coroutines for timed waits
+private IEnumerator DoSomethingCo()
 {
-    // Automatically cancelled when MonoBehaviour is destroyed
-    await Awaitable.WaitForSecondsAsync(1f, destroyCancellationToken);
+    // Wait 1 second, then continue
+    yield return new WaitForSeconds(1f);
 
-    // Safe to access - this line won't run if destroyed
+    // The object may have been destroyed while waiting — guard before accessing
+    if (this == null || !isActiveAndEnabled) yield break;
+
     transform.position = Vector3.zero;
 }
 
 // Wait for next frame
-private async Awaitable WaitOneFrame()
+private IEnumerator WaitOneFrameCo()
 {
-    await Awaitable.NextFrameAsync(destroyCancellationToken);
+    yield return null;
 }
 
 // Wait for end of frame
-private async Awaitable WaitEndOfFrame()
+private IEnumerator WaitEndOfFrameCo()
 {
-    await Awaitable.EndOfFrameAsync(destroyCancellationToken);
+    yield return new WaitForEndOfFrame();
 }
 
 // Wait for fixed update
-private async Awaitable WaitForPhysics()
+private IEnumerator WaitForPhysicsCo()
 {
-    await Awaitable.FixedUpdateAsync(destroyCancellationToken);
+    yield return new WaitForFixedUpdate();
 }
 
-// Custom cancellation
-private CancellationTokenSource _cts;
+// Custom cancellation — stop the coroutine externally
+private Coroutine _routine;
 
-private async Awaitable DoWithCustomCancellation()
+private IEnumerator DoWithCustomCancellationCo()
 {
-    _cts = new CancellationTokenSource();
-
-    try
-    {
-        await Awaitable.WaitForSecondsAsync(5f, _cts.Token);
-        Debug.Log("Completed");
-    }
-    catch (OperationCanceledException)
-    {
-        Debug.Log("Cancelled");
-    }
+    yield return new WaitForSeconds(5f);
+    Debug.Log("Completed");
 }
 
-public void Cancel() => _cts?.Cancel();
+public void StartRoutine() => _routine = StartCoroutine(DoWithCustomCancellationCo());
+public void Cancel() { if (_routine != null) { StopCoroutine(_routine); _routine = null; } }
 ```
 
-### Awaitable vs Coroutine Comparison
+### Coroutine vs async/await Comparison
 
-| Feature | Coroutine | Awaitable (Unity 6) |
-|---------|-----------|---------------------|
-| Cancellation | Manual StopCoroutine | Built-in token support |
-| Return values | Not supported | Supported via `Awaitable<T>` |
+| Feature | Coroutine | async/await on .NET Task |
+|---------|-----------|--------------------------|
+| Cancellation | Manual `StopCoroutine` | `CancellationToken` |
+| Return values | Not supported | Supported |
 | Exception handling | Limited | Full try/catch support |
-| Destruction safety | Must check manually | `destroyCancellationToken` |
-| Syntax | `yield return` | `async/await` |
+| Destruction safety | Must check manually | Must check manually |
+| Syntax | `yield return` | `await` |
+
+> ℹ️ `Awaitable` (Unity 6) does not exist on Unity 2022.3 — use the coroutine patterns above.
 
 ---
 

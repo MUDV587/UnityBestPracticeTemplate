@@ -7,18 +7,19 @@ namespace Unity.BestPractices.Editor
 {
     /// <summary>
     /// Fixes "Active document not part of open workspace" errors in VS Code caused by
-    /// Unity 6 generating .slnx solution files that OmniSharp does not support.
+    /// Unity-generated solution files (.slnx on Unity 6, .sln on 2022.3 and earlier)
+    /// that the classic OmniSharp extension does not support.
     /// </summary>
     /// <remarks>
     /// The fix:
     /// 1. Removes <c>dotnet.preferCSharpExtension</c> from <c>.vscode/settings.json</c>
     ///    (which forced OmniSharp).
-    /// 2. Adds <c>dotnet.defaultSolution</c> pointing to the project's .slnx file so
+    /// 2. Adds <c>dotnet.defaultSolution</c> pointing to the project's solution file so
     ///    C# Dev Kit knows which solution to load.
     /// 3. Sets <c>dotnet.enableWorkspaceBasedDevelopment</c> to <c>false</c> so C# Dev Kit
     ///    uses the solution file rather than workspace-based discovery.
     /// 4. Adds <c>ms-dotnettools.csdevkit</c> to <c>.vscode/extensions.json</c> so VS Code
-    ///    uses C# Dev Kit, which supports .slnx.
+    ///    uses C# Dev Kit, which supports both .slnx and .sln.
     /// </remarks>
     public static class FixVSCodeSlnx
     {
@@ -47,7 +48,7 @@ namespace Unity.BestPractices.Editor
         /// adds <c>dotnet.defaultSolution</c> and <c>dotnet.enableWorkspaceBasedDevelopment</c>,
         /// and ensures <c>ms-dotnettools.csdevkit</c> is in extensions.json recommendations.
         /// </summary>
-        [MenuItem("Tools/Unity Project Configurator/Fix VS Code .slnx", false, 160)]
+        [MenuItem("Tools/Unity Project Configurator/Fix VS Code Solution", false, 160)]
         public static void Execute()
         {
             string projectRoot = Path.GetDirectoryName(Application.dataPath);
@@ -57,23 +58,28 @@ namespace Unity.BestPractices.Editor
             FixSettingsJson(projectRoot, vscodeDir);
             FixExtensionsJson(vscodeDir);
 
-            Debug.Log("[BestPractice] VS Code .slnx fix applied. Reload VS Code window (Cmd/Ctrl+Shift+P → Reload Window) to take effect.");
+            Debug.Log("[BestPractice] VS Code solution fix applied. Reload VS Code window (Cmd/Ctrl+Shift+P → Reload Window) to take effect.");
         }
 
         /// <summary>
-        /// Finds the first .slnx file in the project root directory.
+        /// Finds the first solution file in the project root directory —
+        /// prefers .slnx (Unity 6) and falls back to .sln (2022.3 and earlier).
         /// Returns the filename (not full path) or null if none is found.
         /// </summary>
-        private static string FindSlnxFileName(string projectRoot)
+        private static string FindSolutionFileName(string projectRoot)
         {
             if (!Directory.Exists(projectRoot))
                 return null;
 
             string[] slnxFiles = Directory.GetFiles(projectRoot, "*.slnx");
-            if (slnxFiles.Length == 0)
+            if (slnxFiles.Length > 0)
+                return Path.GetFileName(slnxFiles[0]);
+
+            string[] slnFiles = Directory.GetFiles(projectRoot, "*.sln");
+            if (slnFiles.Length == 0)
                 return null;
 
-            return Path.GetFileName(slnxFiles[0]);
+            return Path.GetFileName(slnFiles[0]);
         }
 
         private static void FixSettingsJson(string projectRoot, string vscodeDir)
@@ -83,10 +89,10 @@ namespace Unity.BestPractices.Editor
             // If settings.json does not exist, create it with just the required settings.
             if (!File.Exists(path))
             {
-                string slnxName = FindSlnxFileName(projectRoot);
+                string solutionName = FindSolutionFileName(projectRoot);
                 string content = "{\n";
-                if (slnxName != null)
-                    content += "    \"" + k_DefaultSolutionKey + "\": \"" + slnxName + "\",\n";
+                if (solutionName != null)
+                    content += "    \"" + k_DefaultSolutionKey + "\": \"" + solutionName + "\",\n";
                 content += "    \"" + k_WorkspaceDevKey + "\": false\n";
                 content += "}\n";
                 File.WriteAllText(path, content);
@@ -115,12 +121,12 @@ namespace Unity.BestPractices.Editor
             }
 
             // Step 2: Add dotnet.defaultSolution if not present.
-            string slnxFileName = FindSlnxFileName(projectRoot);
-            if (slnxFileName != null && !lines.Any(l => l.Contains(k_DefaultSolutionKey)))
+            string solutionFileName = FindSolutionFileName(projectRoot);
+            if (solutionFileName != null && !lines.Any(l => l.Contains(k_DefaultSolutionKey)))
             {
-                InsertSettingBeforeClosingBrace(lines, "\"" + k_DefaultSolutionKey + "\": \"" + slnxFileName + "\"");
+                InsertSettingBeforeClosingBrace(lines, "\"" + k_DefaultSolutionKey + "\": \"" + solutionFileName + "\"");
                 modified = true;
-                Debug.Log($"[BestPractice] Added '{k_DefaultSolutionKey}: {slnxFileName}' to {path}");
+                Debug.Log($"[BestPractice] Added '{k_DefaultSolutionKey}: {solutionFileName}' to {path}");
             }
 
             // Step 3: Add dotnet.enableWorkspaceBasedDevelopment if not present.

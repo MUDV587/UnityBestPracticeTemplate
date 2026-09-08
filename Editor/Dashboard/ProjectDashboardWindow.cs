@@ -884,15 +884,22 @@ namespace UnityBestPractices.Editor.Dashboard
                 + (ConfigureProjectSettings.IsInputSystemConfigured ? 1 : 0)
                 + (ConfigureProjectSettings.IsIncrementalGCConfigured ? 1 : 0)
                 + (ConfigureProjectSettings.IsCreateObjectsAtOriginConfigured ? 1 : 0)
+#if UNITY_6000_0_OR_NEWER
                 + (ConfigureProjectSettings.IsNewHierarchyWindowConfigured ? 1 : 0)
+#endif
                 + (ConfigureProjectSettings.IsAssetManagerImportLocationConfigured ? 1 : 0);
-            m_showProjectSettings = EditorGUILayout.Foldout(m_showProjectSettings, $"PROJECT SETTINGS — {settingsOk}/9 configured", true, EditorStyles.foldoutHeader);
+#if UNITY_6000_0_OR_NEWER
+            int settingsTotal = 9;
+#else
+            int settingsTotal = 8;
+#endif
+            m_showProjectSettings = EditorGUILayout.Foldout(m_showProjectSettings, $"PROJECT SETTINGS — {settingsOk}/{settingsTotal} configured", true, EditorStyles.foldoutHeader);
 
             if (m_showProjectSettings)
             {
                 GUILayout.Space(4);
 
-                bool allOk = settingsOk == 9;
+                bool allOk = settingsOk == settingsTotal;
 
                 using (new EditorGUI.DisabledScope(allOk))
                 {
@@ -1068,6 +1075,7 @@ namespace UnityBestPractices.Editor.Dashboard
                             "and can confuse prefab placement scripts that expect origin defaults."
                         }));
 
+#if UNITY_6000_0_OR_NEWER
                 DrawSettingCard(
                     "Hierarchy: Use New Hierarchy Window",
                     "Enabled: redesigned Hierarchy with better rendering performance for large scenes and the Query Builder for filtering by component type.\nDisabled: legacy Hierarchy window — no Query Builder, slower with many objects.",
@@ -1089,6 +1097,7 @@ namespace UnityBestPractices.Editor.Dashboard
                             "The legacy Hierarchy window renders all rows unconditionally, which " +
                             "slows down scrolling in large scenes. The Query Builder is unavailable."
                         }));
+#endif
 
                 DrawSettingCard(
                     "Asset Manager: Import to ThirdPartyAssets",
@@ -1319,7 +1328,7 @@ namespace UnityBestPractices.Editor.Dashboard
 
                 DrawFileToolCard(
                     "Generate .editorconfig",
-                    "Creates an .editorconfig enforcing C# naming and formatting conventions (Allman braces, 4-space indent, m_ prefix rules).",
+                    "Creates an .editorconfig enforcing C# naming and formatting conventions (Allman braces, 4-space indent, _ prefix rules).",
                     editorconfigPath, GenerateEditorConfig.Execute,
                     helpAction: () => ExplainerWindow.Show(
                         "Generate .editorconfig",
@@ -1332,9 +1341,8 @@ namespace UnityBestPractices.Editor.Dashboard
                             "  • Allman (open-brace-on-new-line) brace style\n" +
                             "  • 4-space indentation, max 120 characters per line\n" +
                             "  • LF line endings and UTF-8 encoding\n" +
-                            "  • m_ prefix for private instance fields (e.g. m_health)\n" +
-                            "  • s_ prefix for private static fields (e.g. s_instance)\n" +
-                            "  • k_ prefix for constants (e.g. k_maxCount)\n" +
+                            "  • _camelCase for private and protected fields (e.g. _health, _instance)\n" +
+                            "  • PascalCase for constants, static readonly, and public fields (e.g. MaxCount)\n" +
                             "  • PascalCase for properties and methods\n" +
                             "  • System using directives sorted first",
                             "Without this file each developer's IDE applies its own default formatting, " +
@@ -1345,36 +1353,39 @@ namespace UnityBestPractices.Editor.Dashboard
 
                 bool vsCodeFixed = FixVSCodeSlnx.IsFixed(projectRoot);
                 DrawToolCard(
-                    "Fix VS Code .slnx",
-                    "Configures .vscode/settings.json with dotnet.defaultSolution (pointing to the .slnx file) and dotnet.enableWorkspaceBasedDevelopment: false; removes dotnet.preferCSharpExtension if present; adds C# Dev Kit to .vscode/extensions.json. Fixes \"Active document not part of open workspace\" errors caused by Unity 6 generating .slnx files.",
+                    "Fix VS Code Solution",
+                    "Configures .vscode/settings.json with dotnet.defaultSolution (pointing to the project's .sln or .slnx file) and dotnet.enableWorkspaceBasedDevelopment: false; removes dotnet.preferCSharpExtension if present; adds C# Dev Kit to .vscode/extensions.json. Fixes \"Active document not part of open workspace\" errors caused by Unity-generated solution files.",
                     vsCodeFixed, vsCodeFixed ? ".vscode files configured for C# Dev Kit" : "",
                     vsCodeFixed ? "Done" : "Run", FixVSCodeSlnx.Execute, 60,
                     helpAction: () => ExplainerWindow.Show(
-                        "Fix VS Code .slnx",
+                        "Fix VS Code Solution",
                         new[]
                         {
-                            "Unity 6 generates .slnx solution files (a new format). The classic C# " +
-                            "extension (OmniSharp) does not support .slnx, which causes VS Code to " +
-                            "show \"Active document not part of open workspace\" on every C# file.",
+                            "Unity generates a solution file that C# Dev Kit needs to load: .slnx " +
+                            "on Unity 6, .sln on 2022.3 and earlier. The classic C# extension " +
+                            "(OmniSharp) does not support these solution files properly, which causes " +
+                            "VS Code to show \"Active document not part of open workspace\" on every C# file.",
                             "ROOT CAUSE\n" +
                             "C# Dev Kit needs to know which solution file to load and must use " +
                             "solution-based (not workspace-based) project discovery. Without these " +
                             "settings, it cannot associate C# files with the correct project.",
                             "WHAT THIS FIX DOES\n" +
                             "1. Removes dotnet.preferCSharpExtension from .vscode/settings.json\n" +
-                            "2. Adds dotnet.defaultSolution pointing to the project's .slnx file\n" +
+                            "2. Adds dotnet.defaultSolution pointing to the project's .sln/.slnx file\n" +
                             "3. Sets dotnet.enableWorkspaceBasedDevelopment to false\n" +
                             "4. Adds ms-dotnettools.csdevkit to .vscode/extensions.json recommendations",
                             "AFTER RUNNING\n" +
                             "Install C# Dev Kit in VS Code if not already installed, then reload the " +
                             "VS Code window (Cmd/Ctrl+Shift+P → Reload Window). Open the project via " +
-                            "Unity → Assets → Open C# Project so it loads with the .slnx workspace."
+                            "Unity → Assets → Open C# Project so it loads with the solution workspace."
                         },
                         runLabel: "Apply Fix",
                         runAction: FixVSCodeSlnx.Execute));
 
 
+#if UNITY_6000_0_OR_NEWER
                 DrawUnityMCPCard(projectRoot);
+#endif
 
                 DrawToolCard(
                     "Assembly Definitions",
@@ -1612,6 +1623,7 @@ namespace UnityBestPractices.Editor.Dashboard
             GUILayout.Space(3);
         }
 
+#if UNITY_6000_0_OR_NEWER
         private void DrawUnityMCPCard(string projectRoot)
         {
             bool configured = ConfigureUnityMCP.IsConfigured;
@@ -1694,6 +1706,7 @@ namespace UnityBestPractices.Editor.Dashboard
             EditorGUILayout.EndVertical();
             GUILayout.Space(3);
         }
+#endif
 
         private void DrawSetupFoldersCard(bool foldersOk)
         {

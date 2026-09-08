@@ -1,8 +1,8 @@
 {
   "name": "com.unity.best-practices",
-  "version": "1.4.3",
+  "version": "1.5.0",
   "displayName": "Unity Project Configurator",
-  "unity": "6000.3",
+  "unity": "2022.3",
   "description": "A Unity editor toolkit that accelerates project setup, enforces C# coding standards, and supercharges AI-assisted development with curated LLM instruction files and agent skills.",
   "author": {
     "name": "Krogh-Jacobsen",
@@ -35,7 +35,7 @@
     },
     {
       "displayName": "Object Pooling",
-      "description": "ObjectPool<T> spawner with auto-release on disable using Unity 6 Awaitable.",
+      "description": "ObjectPool<T> spawner with auto-release on disable using coroutines.",
       "path": "Samples/ObjectPooling"
     },
     {

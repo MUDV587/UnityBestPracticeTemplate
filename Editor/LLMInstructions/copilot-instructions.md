@@ -31,13 +31,13 @@
 
 ## Unity Version-Specific Instructions
 
-- ℹ️ This project uses **Unity 6.3**. Always use the latest documentation and APIs that apply to Unity 6 or later versions.
+- ℹ️ This project uses **Unity 2022.3 LTS**. Use the Unity 2022.3 documentation and APIs — do not use Unity 6-only features (`Awaitable`, runtime data binding, `[UxmlElement]`, etc.).
 - ℹ️ Use the newer **Input System**, not the Input Manager.
 - ℹ️ Use the newer **UI Toolkit**, not UGUI.
 - ℹ️ Use **Universal Render Pipeline (URP)**, not the built-in render pipeline.
-- ℹ️ Prefer **Unity 6 Awaitables** over coroutines: `await Awaitable.WaitForSecondsAsync(delay, token);` Guard continuations with `if (this == null || !isActiveAndEnabled) return;`.
+- ℹ️ Prefer **coroutines** over async/await for Unity sequencing: `yield return new WaitForSeconds(delay);` Guard continuations with `if (this == null || !isActiveAndEnabled) yield break;`.
 - ℹ️ When instantiating frequently, favor `UnityEngine.Pool.ObjectPool<T>` with `actionOnGet`/`actionOnRelease` to toggle active state.
-- ℹ️ Unity 6 introduces `[CreateProperty]` and data binding at runtime — use this for reactive UI updates instead of manual synchronization.
+- ℹ️ There is no runtime data binding (`[CreateProperty]`, `dataSource`, `binding-path`) on Unity 2022.3 — update UI elements manually via a `Refresh()` method or a change event.
 - ℹ️ Burst compiler is enabled. Math-heavy code can use Jobs + Burst for significant performance gains.
 - ℹ️ IL2CPP builds have different performance characteristics than Mono — profile on target platform.
 
@@ -117,13 +117,16 @@ Organize classes in the **Unity Script Execution Order**:
 
 1. **Using statements** — System namespaces, then Unity, then project-specific
 2. **Namespace declaration**
-3. **Fields** — Serialized first, then private, static with `s_` prefix, constants with `k_` prefix
-4. **Properties** — PascalCase, no prefixes
-5. **Events** — Event declarations with `On` prefix for raise methods
-6. **MonoBehaviour Methods** — In execution order (Awake → OnEnable → Start → Update → LateUpdate → OnDisable)
-7. **Public Methods**
-8. **Private Methods**
-9. **Other Classes** (nested)
+3. **Fields** — `const` → `static readonly` → `static` → instance; `[SerializeField]` first; private/protected in `_camelCase`, constants and static readonly in PascalCase
+4. **Constructors**
+5. **Properties** — PascalCase, no prefixes
+6. **Events** — Event declarations with `On` prefix for raise methods
+7. **MonoBehaviour Methods** — In execution order (Awake → OnEnable → Start → Update → LateUpdate → OnDisable)
+8. **Public Methods**
+9. **Private Methods**
+10. **Other Classes** (nested)
+
+- ✅ Within each group, order members by access level: public → internal → protected → private; static members before instance members.
 
 ### Using Statements & Namespaces
 
@@ -142,27 +145,34 @@ using Core.UI;
 namespace Core.MapGameplay { ... }
 ```
 
+### Nullable Reference Types
+
+- ✅ Add `#nullable enable` at the top of new `.cs` files so the compiler catches potential null dereferences.
+- ✅ Annotate members and parameters that can be null with `?` (e.g., `string?`, `Transform?`).
+- ✅ Use `!` (null-forgiving) only when you are certain the value is non-null.
+- ⚠️ Unity engine APIs are not fully annotated on 2022.3 — expect warnings at engine call sites; keep your own contracts annotated.
+- ❌ Don't disable nullable project-wide just to silence warnings — prefer file-level opt-in.
+
 ### Fields
 
-- ✅ Use `m_` prefix for private variables
-- ✅ Use `s_` prefix for static fields
-- ✅ Use `k_` prefix for constants
+- ✅ Use `_camelCase` for private and protected fields (instance and static)
+- ✅ Use PascalCase for constants, static readonly, and public fields
 - ✅ Use descriptive names that clearly indicate the field's purpose.
 - ❌ Avoid abbreviations unless they are widely understood (e.g., `UI`, `ID`).
-- ✅ Include units in the name if applicable (e.g., `m_speedInMetersPerSecond`).
-- ✅ Prefix Boolean fields with verbs like `is`, `has`, or `can` (e.g., `m_isActive`, `m_hasPermission`).
+- ✅ Include units in the name if applicable (e.g., `_speedInMetersPerSecond`).
+- ✅ Prefix Boolean fields with verbs like `is`, `has`, or `can` (e.g., `_isActive`, `_hasPermission`).
 - ❌ Avoid redundancy by not repeating the class name in field names.
 - ✅ Expose fields in the Inspector with `[SerializeField]`.
 
 ```csharp
-private int m_health;                  // Use m_ prefix
-private static int s_sharedCount;      // Use s_ prefix
-private const int k_maxCount = 100;    // Use k_ prefix
+private int _health;                  // _camelCase for private fields
+private static int _sharedCount;      // _camelCase for static fields
+private const int MaxCount = 100;    // PascalCase for constants
 
-[SerializeField] private int m_health; // Serialized private field
+[SerializeField] private int _health; // Serialized private field
 
-private int m_elapsedTimeInSeconds;    // Include units
-private bool m_isPlayerDead;           // Prefix booleans
+private int _elapsedTimeInSeconds;    // Include units
+private bool _isPlayerDead;           // Prefix booleans
 ```
 
 ### Properties
@@ -170,22 +180,22 @@ private bool m_isPlayerDead;           // Prefix booleans
 - ✅ Place properties after fields and before MonoBehaviour methods.
 - ✅ Use PascalCase for properties and avoid prefixes/suffixes.
 - ✅ Prefer verb-like names for boolean properties (Is/Has/Can).
-- ❌ Do not serialize properties. Instead use [SerializeField] private T m_field with a public property.
+- ❌ Do not serialize properties. Instead use [SerializeField] private T _field with a public property.
 - ✅ Use Properties for accessing or modifying the state of an object.
 - ℹ️ Use methods for actions or operations.
 
 ```csharp
 // Private backing field
-private int m_maxHealth;
+private int _maxHealth;
 
 // Read-only property
-public int MaxHealthReadOnly => m_maxHealth;
+public int MaxHealthReadOnly => _maxHealth;
 
 // Property with full implementation
 public int MaxHealth
 {
-    get => m_maxHealth;
-    set => m_maxHealth = value;
+    get => _maxHealth;
+    set => _maxHealth = value;
 }
 
 // Auto-implemented property
@@ -227,13 +237,13 @@ public void OnDoorOpened()
 ```csharp
 private void OnEnable()
 {
-    m_gameManager.DoorOpened += HandleDoorOpened;
+    _gameManager.DoorOpened += HandleDoorOpened;
     StaticGameEvents.OnTileSelected += HandleTileSelected;
 }
 
 private void OnDisable()
 {
-    m_gameManager.DoorOpened -= HandleDoorOpened;
+    _gameManager.DoorOpened -= HandleDoorOpened;
     StaticGameEvents.OnTileSelected -= HandleTileSelected;
 }
 ```
@@ -259,16 +269,23 @@ private void HandleTileSelected(MapTile tile) => ChangeState(UIGameState.TownVie
 // ✅ "Process" for game logic operations (turn-based or system-driven)
 private void ProcessTradeIncome()
 {
-    foreach (var relationship in m_relationships)
+    foreach (var relationship in _relationships)
     {
-        if (relationship.InvolvesFaction(m_playerFactionData))
-            m_gameResources.ModifyCurrentGold(m_tradeAgreementGold);
+        if (relationship.InvolvesFaction(_playerFactionData))
+            _gameResources.ModifyCurrentGold(_tradeAgreementGold);
     }
 }
 
 // Boolean methods asking questions
-public bool IsPlayerAlive() => m_health > 0;
+public bool IsPlayerAlive() => _health > 0;
 ```
+
+### Local Variables & var
+
+- ✅ Use `var` when the type is apparent from the right side (e.g., `var player = GetComponent<Player>();`, `var items = new List<Item>();`).
+- ✅ Use explicit types when the type is not obvious (casts, ambiguous method results, or when the literal differs from the intended type).
+- ✅ `var` is for local variables only — fields, properties, and method signatures always use explicit types.
+- ❌ Don't use `var` when it obscures what the value is.
 
 ---
 
@@ -310,7 +327,7 @@ public interface IDamageable
 ```csharp
 public enum Direction { North, South, East, West }
 
-switch (m_currentDirection)
+switch (_currentDirection)
 {
     case Direction.North: /* ... */ break;
 }
@@ -325,7 +342,7 @@ switch (m_currentDirection)
 // Good - use string interpolation
 private void UpdateScoreDisplay(int score, float time)
 {
-    string result = $"Score: {score} Time: {time:F1}";
+    var result = $"Score: {score} Time: {time:F1}";
 }
 ```
 
@@ -338,25 +355,34 @@ private void UpdateScoreDisplay(int score, float time)
 - ❌ Avoid allocations inside loops — reuse collections and call `.Clear()`.
 
 ```csharp
-private List<Enemy> m_enemies = new();
-private Enemy[] m_enemyPool = new Enemy[100];
-private Dictionary<int, Enemy> m_enemyById = new();
+private List<Enemy> _enemies = new();
+private Enemy[] _enemyPool = new Enemy[100];
+private Dictionary<int, Enemy> _enemyById = new();
 ```
 
-### Async & Awaitable Usage
+### Coroutines
 
-- ✅ Use the **Awaitable API** (available in Unity 6+) with async/await for timed delays.
-- ✅ Name async methods with the Async suffix (e.g., `OpenDoorAsync`).
-- ✅ Prefer Awaitable over StartCoroutine for simple delays.
+- ✅ Use coroutines (`IEnumerator` + `yield return`) for timed delays and sequencing — this is the standard approach on Unity 2022.3 (there is no `Awaitable`).
+- ✅ Name coroutines with the Co suffix (e.g., `OpenDoorCo`) and start them with `StartCoroutine(...)`.
+- ✅ Prefer StartCoroutine over async/await for Unity lifecycle-coupled delays.
 
 ```csharp
-public async Awaitable OpenDoorAsync()
+private IEnumerator OpenDoorCo()
 {
     Debug.Log("Door opening...");
-    await Awaitable.WaitForSecondsAsync(2f, destroyCancellationToken);
+    yield return new WaitForSeconds(2f);
     Debug.Log("Door opened!");
 }
 ```
+
+### Async / Await
+
+- ✅ Use `async`/`await` for I/O-bound or API-driven work that returns `Task`/`Task<T>` (file I/O, web requests, Addressables `Task` APIs).
+- ✅ Name `Task`-returning methods with the `Async` suffix (e.g., `LoadSaveDataAsync()`, `FetchPlayerProfileAsync()`).
+- ❌ Avoid `async void` outside event handlers (UnityEvent/button callbacks) — unhandled exceptions crash the app.
+- ❌ Never block with `.Result` / `.Wait()` — always `await`.
+- ✅ Guard after `await` with `if (this == null) return;` — 2022.3 has no built-in `destroyCancellationToken`.
+- ✅ Coroutines for lifecycle-coupled timing, `async`/`await` for I/O — pick one per operation.
 
 ### ScriptableObjects
 
@@ -369,11 +395,11 @@ public async Awaitable OpenDoorAsync()
 [CreateAssetMenu(fileName = "WeaponData", menuName = "Game Data/Weapon")]
 public class WeaponDataSO : ScriptableObject
 {
-    [SerializeField] private string m_weaponName;
-    [SerializeField] private int m_damage;
+    [SerializeField] private string _weaponName;
+    [SerializeField] private int _damage;
 
-    public string WeaponName => m_weaponName;
-    public int Damage => m_damage;
+    public string WeaponName => _weaponName;
+    public int Damage => _damage;
 }
 ```
 
@@ -384,11 +410,11 @@ public class WeaponDataSO : ScriptableObject
 - ✅ Always define these names as constants in code.
 
 ```csharp
-private const string k_isRunningParam = "IsRunning";
-private const string k_speedParam = "Speed";
+private const string IsRunningParam = "IsRunning";
+private const string SpeedParam = "Speed";
 
-m_animator.SetBool(k_isRunningParam, isMoving);
-m_animator.SetFloat(k_speedParam, currentSpeed);
+_animator.SetBool(IsRunningParam, isMoving);
+_animator.SetFloat(SpeedParam, currentSpeed);
 ```
 
 ### Debugging
@@ -418,7 +444,7 @@ public void SaveGame(GameData data)
     try
     {
         string json = JsonUtility.ToJson(data);
-        File.WriteAllText(k_saveFilePath, json);
+        File.WriteAllText(SaveFilePath, json);
     }
     catch (Exception ex)
     {
@@ -465,7 +491,7 @@ public enum UIGameState
 
 public void ChangeState(UIGameState newState)
 {
-    m_currentState = newState;
+    _currentState = newState;
     ApplyStateToPanels(newState);
 }
 ```
@@ -481,7 +507,7 @@ public abstract class UITKBaseClass : MonoBehaviour
 {
     protected virtual void Awake()
     {
-        m_uiDocument = GetComponent<UIDocument>();
+        _uiDocument = GetComponent<UIDocument>();
     }
 
     protected virtual void OnEnable()
@@ -515,11 +541,11 @@ Rather than deep inheritance hierarchies, use focused MonoBehaviour components o
 ```csharp
 public class MapTile : MonoBehaviour
 {
-    [SerializeField] private MapTileMilitary m_mapTileMilitary;
+    [SerializeField] private MapTileMilitary _mapTileMilitary;
 
     private void Awake()
     {
-        m_mapTileMilitary = GetComponent<MapTileMilitary>();
+        _mapTileMilitary = GetComponent<MapTileMilitary>();
     }
 }
 ```
@@ -533,13 +559,13 @@ public class MapTile : MonoBehaviour
 ```csharp
 public class BulletPool : MonoBehaviour
 {
-    [SerializeField] private Bullet m_bulletPrefab;
-    private ObjectPool<Bullet> m_pool;
+    [SerializeField] private Bullet _bulletPrefab;
+    private ObjectPool<Bullet> _pool;
 
     private void Awake()
     {
-        m_pool = new ObjectPool<Bullet>(
-            createFunc: () => Instantiate(m_bulletPrefab),
+        _pool = new ObjectPool<Bullet>(
+            createFunc: () => Instantiate(_bulletPrefab),
             actionOnGet: bullet => bullet.gameObject.SetActive(true),
             actionOnRelease: bullet => bullet.gameObject.SetActive(false),
             defaultCapacity: 20,
@@ -547,8 +573,8 @@ public class BulletPool : MonoBehaviour
         );
     }
 
-    public Bullet GetFromPool() => m_pool.Get();
-    public void ReturnToPool(Bullet bullet) => m_pool.Release(bullet);
+    public Bullet GetFromPool() => _pool.Get();
+    public void ReturnToPool(Bullet bullet) => _pool.Release(bullet);
 }
 ```
 
@@ -668,52 +694,51 @@ Variables must be declared in `:root {}`:
 </ui:UXML>
 ```
 
-### Data Binding (Unity 6+)
+### Runtime Data Binding — Not Available on Unity 2022.3
 
-**Model with Reactive Updates:**
+Unity's runtime data binding (`dataSource`, `binding-path`, `[CreateProperty]`) is Unity 6-only — it does not exist on 2022.3 and will not compile. Update the UI manually:
+
+**Model with a change event:**
 
 ```csharp
 [CreateAssetMenu]
-public class PlayerDataSO : ScriptableObject, INotifyBindablePropertyChanged
+public class PlayerDataSO : ScriptableObject
 {
-    public event EventHandler<BindablePropertyChangedEventArgs> propertyChanged;
+    public event System.Action Changed;
 
-    [SerializeField] private int m_health = 100;
+    [SerializeField] private int _health = 100;
 
-    [CreateProperty]
     public int Health
     {
-        get => m_health;
+        get => _health;
         set
         {
-            if (m_health != value)
+            if (_health != value)
             {
-                m_health = value;
-                propertyChanged?.Invoke(this, new BindablePropertyChangedEventArgs(nameof(Health)));
+                _health = value;
+                Changed?.Invoke();
             }
         }
     }
 }
 ```
 
-**Binding in UXML:**
-```xml
-<ui:VisualElement data-source-type="PlayerDataSO, Assembly-CSharp">
-    <ui:ProgressBar binding-path="Health" low-value="0" high-value="100">
-        <Bindings>
-            <ui:DataBinding property="value" binding-mode="ToTarget" />
-        </Bindings>
-    </ui:ProgressBar>
-</ui:VisualElement>
-```
-
-**Setting Data Source in C#:**
+**Populating the UI in C#:**
 ```csharp
 private void OnEnable()
 {
-    var root = m_uiDocument.rootVisualElement;
-    var panel = root.Q<VisualElement>("player-panel");
-    panel.dataSource = m_playerData;
+    _playerData.Changed += Refresh;
+    Refresh();
+}
+
+private void OnDisable()
+{
+    _playerData.Changed -= Refresh;
+}
+
+private void Refresh()
+{
+    _healthBar.value = _playerData.Health;
 }
 ```
 
@@ -732,14 +757,14 @@ var cards = root.Query<VisualElement>(className: "card").ToList();
 // Cache queries in OnEnable (NOT Update)
 private void OnEnable()
 {
-    var root = m_uiDocument.rootVisualElement;
-    m_submitButton = root.Q<Button>("submit-button");
-    m_submitButton.clicked += OnSubmitClicked;
+    var root = _uiDocument.rootVisualElement;
+    _submitButton = root.Q<Button>("submit-button");
+    _submitButton.clicked += OnSubmitClicked;
 }
 
 private void OnDisable()
 {
-    m_submitButton.clicked -= OnSubmitClicked;
+    _submitButton.clicked -= OnSubmitClicked;
 }
 ```
 
@@ -758,7 +783,7 @@ element.style.visibility = Visibility.Hidden;
 // Helper method
 public void SetPanelVisible(bool isVisible)
 {
-    m_panel.style.display = isVisible ? DisplayStyle.Flex : DisplayStyle.None;
+    _panel.style.display = isVisible ? DisplayStyle.Flex : DisplayStyle.None;
 }
 ```
 
@@ -768,25 +793,25 @@ public void SetPanelVisible(bool isVisible)
 // Manual template instantiation
 private void PopulateCards()
 {
-    foreach (var cardData in m_cards)
+    foreach (var cardData in _cards)
     {
-        var cardElement = m_cardTemplate.Instantiate();
+        var cardElement = _cardTemplate.Instantiate();
         cardElement.Q<Label>("card-title").text = cardData.Title;
         cardElement.dataSource = cardData;
-        m_cardContainer.Add(cardElement);
+        _cardContainer.Add(cardElement);
     }
 }
 
 // ListView with virtualization
 private void SetupListView()
 {
-    m_listView.makeItem = () => m_itemTemplate.Instantiate();
-    m_listView.bindItem = (element, index) =>
+    _listView.makeItem = () => _itemTemplate.Instantiate();
+    _listView.bindItem = (element, index) =>
     {
-        var item = m_items[index];
+        var item = _items[index];
         element.Q<Label>("item-name").text = item.ItemName;
     };
-    m_listView.itemsSource = m_items;
+    _listView.itemsSource = _items;
 }
 ```
 
@@ -873,11 +898,10 @@ var button = root.Q<Button>("myButton");  // Returns null if not found
 // Debug: List all elements
 root.Query().ForEach(e => Debug.Log($"{e.GetType().Name}: {e.name}"));
 
-// Data binding issues
-// Check: binding-path is case-sensitive
-// Check: Property has [CreateProperty] attribute
-// Check: Class implements INotifyBindablePropertyChanged
-// Check: dataSource is assigned in C#
+// UI not updating after data changes
+// Check: the View calls Refresh() (or listens to the model's Changed event)
+// Check: element names match the UXML name attributes (case-sensitive)
+// Note: runtime data binding (binding-path / dataSource) is Unity 6-only — not available on 2022.3
 ```
 
 ---
@@ -903,7 +927,7 @@ When reviewing Unity code for performance, check in this order:
 - ✅ Use `Physics.OverlapSphereNonAlloc` / `RaycastNonAlloc` with a pre-allocated buffer array.
 - ✅ Use `.sharedMaterial` instead of `.material`; use `MaterialPropertyBlock` for per-instance changes.
 - ✅ Use dirty flags to recalculate expensive values only when state changes.
-- ✅ Prefer `Awaitable` over coroutines (no allocation); cache `WaitForSeconds` if using coroutines.
+- ✅ Cache `WaitForSeconds` instances when using coroutines (there is no `Awaitable` on 2022.3).
 
 ### Common Anti-Patterns
 
@@ -959,10 +983,8 @@ When reviewing Unity code for performance, check in this order:
 | ❌ Wrong | ✅ Correct | Notes |
 |----------|-----------|-------|
 | `color: #FF0000;` | `color: rgb(255, 0, 0);` | USS doesn't support hex |
-| `binding-path="health"` | `binding-path="Health"` | Case-sensitive |
 | `button.onClick += ...` | `button.clicked += ...` | Use `clicked` |
-| Missing `[CreateProperty]` | Add attribute | Required for binding |
-| Missing `INotifyBindablePropertyChanged` | Implement | Required for reactive updates |
+| Using `[CreateProperty]` / `dataSource` | Don't — Unity 6-only | Manual `Refresh()` on 2022.3 |
 | `root.Q("name")` | `root.Q<VisualElement>("name")` | Always include type |
 | Not unsubscribing events | Unsubscribe in `OnDisable` | Memory leaks |
 | `navBarMenu` | `navbar-menu` | Use kebab-case |
@@ -970,14 +992,14 @@ When reviewing Unity code for performance, check in this order:
 | String concatenation in Update | Use StringBuilder | Creates garbage |
 | LINQ in Update | Explicit loops | Creates garbage |
 
-### Binding Not Updating
+### UI Not Updating After Data Changes
 
 Checklist:
-1. ✅ Property has `[CreateProperty]`
-2. ✅ Class implements `INotifyBindablePropertyChanged`
-3. ✅ `Notify()` is called when the property changes
-4. ✅ `dataSource` is assigned in C#
-5. ✅ `binding-path` matches property name exactly (case-sensitive)
+1. ✅ The View subscribes to the model's `Changed` event in `OnEnable` and unsubscribes in `OnDisable`
+2. ✅ The model raises `Changed` in every property setter
+3. ✅ The View calls `Refresh()` after subscribing (initial population)
+4. ✅ Element `name`s match the UXML exactly (case-sensitive)
+5. ✅ `Refresh()` updates every displayed value (no runtime data binding on 2022.3)
 
 ### Element Not Visible
 
@@ -1004,4 +1026,4 @@ Checklist:
 
 **Document Version:** 2.1
 **Last Updated:** March 2026
-**Target Platform:** Unity 6.3+
+**Target Platform:** Unity 2022.3+

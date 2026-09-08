@@ -2,7 +2,7 @@
 
 A Unity editor toolkit that accelerates project setup, enforces consistent C# coding standards, and supercharges AI-assisted development with curated LLM instruction files and agent skills.
 
-Supports **Unity 6000.3+** · License: **MIT**
+Supports **Unity 2022.3 LTS+** · License: **MIT**
 
 ---
 

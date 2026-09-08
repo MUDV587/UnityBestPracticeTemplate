@@ -5,6 +5,18 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this package adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-09-08
+### Changed
+- **Ported to Unity 2022.3 LTS** — `package.json` minimum version lowered from `6000.3` to `2022.3`; all LLM instruction files, agent skills, and documentation retargeted to Unity 2022.3 APIs (coroutines instead of `Awaitable`, `UxmlFactory`/`UxmlTraits` instead of `[UxmlElement]`/`[UxmlAttribute]`, editor-only data binding, Netcode for GameObjects 1.x)
+- **Unity 6-only features gated** — New Hierarchy Window, Unity MCP relay, and the VS Code .slnx fix are now wrapped in `#if UNITY_6000_0_OR_NEWER` so they stay available on Unity 6 but don't appear or mislead on 2022.3
+- **Fix VS Code Solution** — the VS Code fix now targets both `.slnx` (Unity 6) and `.sln` (2022.3) solution files
+- **ObjectPooling sample** — replaced `Awaitable.WaitForSecondsAsync` with a coroutine so the sample compiles on 2022.3
+- **Package boilerplate** — default minimum Unity version in the wizard changed from `6000.3` to `2022.3`
+- **C# naming standard** — the coding standard shipped with the package (LLM instructions, agent skills, Quick Reference, and the `.editorconfig` generator) now specifies `_camelCase` for private/protected fields (instance and static) and PascalCase for constants, static readonly, and public fields, matching the .NET mainstream; the package's existing code intentionally keeps its original `m_`/`s_`/`k_` naming rather than being churned
+
+### Fixed
+- **Setup Tags and Layers** — restored the missing implementation of the `Setup Tags and Layers` menu item (the file was empty, so the menu item and the wizard step silently did nothing); it now reads a `ProjectTagsAndLayers` config and registers tags, sorting layers, and physics layers into `TagManager.asset`, preserving existing entries
+
 ## [1.4.3] - 2026-03-15
 ### Added
 - **Unity MCP relay** — `ConfigureUnityMCP.cs` writes `UserSettings/mcp.json` to wire up the Unity MCP relay server; menu item `Tools → Unity Project Configurator → AI → Configure Unity MCP`; detects whether the relay binary is installed and whether the file already exists before writing

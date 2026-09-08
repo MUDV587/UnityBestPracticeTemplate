@@ -209,7 +209,7 @@ Brief sentence recommending alternatives for the anti-patterns if applicable.
 ### Code Examples
 - Keep examples minimal and focused (10-20 lines max)
 - Include comments only for non-obvious lines
-- Use realistic variable names with `m_` prefix for private fields (Unity convention; omit for non-Unity content)
+- Use realistic variable names with `_camelCase` for private fields, PascalCase for constants (omit for non-Unity content)
 - Show one concept per code block
 - Prefer `private void MethodName()` pattern for Unity methods
 

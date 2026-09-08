@@ -19,10 +19,9 @@ Table of contents:
 
 # Unity Version-Specific Instructions
 
-- ℹ️ This project uses Unity 6.3. The `Animator` API is unchanged from Unity 2022, but Unity 6 introduces improvements to the Animation Rigging package.
-- ℹ️ Unity 6 deprecates some legacy `AnimationClip.SetCurve` patterns in favour of the new Animation Authoring workflow — prefer timeline-based clip authoring.
-- ℹ️ `Animator.StringToHash()` has been the recommended approach since Unity 5 — no exceptions for Unity 6.
-- ℹ️ Unity 6 supports a new `AnimatorControllerLayer.syncedLayerAffectsTiming` property — useful for synced layers.
+- ℹ️ This project uses Unity 2022.3 LTS. The `Animator` API used here is unchanged across Unity 2022.x and Unity 6.
+- ℹ️ `Animator.StringToHash()` has been the recommended approach since Unity 5 — no exceptions.
+- ℹ️ `AnimatorControllerLayer.syncedLayerAffectsTiming` (added in Unity 6) is NOT available on 2022.3 — do not use it.
 
 # Animator Parameter IDs — Cache Everything
 
@@ -37,18 +36,18 @@ The string overloads of the `Set*` methods perform a hash lookup on every call. 
 // AVOID — string lookup every frame
 private void Update()
 {
-    m_Animator.SetFloat("Speed", m_Speed);   // hashes "Speed" each call
-    m_Animator.SetBool("IsGrounded", m_IsGrounded);
+    _animator.SetFloat("Speed", _speed);   // hashes "Speed" each call
+    _animator.SetBool("IsGrounded", _isGrounded);
 }
 
 // PREFER — hash computed once at class initialisation
-private static readonly int k_SpeedHash = Animator.StringToHash("Speed");
-private static readonly int k_IsGroundedHash = Animator.StringToHash("IsGrounded");
+private static readonly int SpeedHash = Animator.StringToHash("Speed");
+private static readonly int IsGroundedHash = Animator.StringToHash("IsGrounded");
 
 private void Update()
 {
-    m_Animator.SetFloat(k_SpeedHash, m_Speed);
-    m_Animator.SetBool(k_IsGroundedHash, m_IsGrounded);
+    _animator.SetFloat(SpeedHash, _speed);
+    _animator.SetBool(IsGroundedHash, _isGrounded);
 }
 ```
 
@@ -82,26 +81,26 @@ public static class AnimatorParams
 // Usage in MonoBehaviour
 public class CharacterAnimator : MonoBehaviour
 {
-    private Animator m_Animator;
+    private Animator _animator;
 
     private void Awake()
     {
-        m_Animator = GetComponent<Animator>();
+        _animator = GetComponent<Animator>();
     }
 
     public void SetSpeed(float speed)
     {
-        m_Animator.SetFloat(AnimatorParams.Speed, speed);
+        _animator.SetFloat(AnimatorParams.Speed, speed);
     }
 
     public void TriggerAttack()
     {
-        m_Animator.SetTrigger(AnimatorParams.AttackTrigger);
+        _animator.SetTrigger(AnimatorParams.AttackTrigger);
     }
 
     public void SetGrounded(bool grounded)
     {
-        m_Animator.SetBool(AnimatorParams.IsGrounded, grounded);
+        _animator.SetBool(AnimatorParams.IsGrounded, grounded);
     }
 }
 ```
@@ -120,8 +119,8 @@ public class CharacterAnimator : MonoBehaviour
 // Correctly resetting a trigger on action cancel
 public void CancelAttack()
 {
-    m_Animator.ResetTrigger(AnimatorParams.AttackTrigger);
-    m_IsAttacking = false;
+    _animator.ResetTrigger(AnimatorParams.AttackTrigger);
+    _isAttacking = false;
 }
 ```
 
@@ -133,20 +132,20 @@ public void CancelAttack()
 - ❌ Never set blend tree parameters to raw, un-smoothed values — this causes jittery animation blending.
 
 ```csharp
-private static readonly int k_SpeedXHash = Animator.StringToHash("VelocityX");
-private static readonly int k_SpeedZHash = Animator.StringToHash("VelocityZ");
+private static readonly int SpeedXHash = Animator.StringToHash("VelocityX");
+private static readonly int SpeedZHash = Animator.StringToHash("VelocityZ");
 
-[SerializeField] private float m_BlendSpeed = 5f;
+[SerializeField] private float _blendSpeed = 5f;
 
-private Vector2 m_CurrentBlend;
+private Vector2 _currentBlend;
 
 private void Update()
 {
-    Vector2 targetBlend = new Vector2(m_Velocity.x, m_Velocity.z);
-    m_CurrentBlend = Vector2.MoveTowards(m_CurrentBlend, targetBlend, m_BlendSpeed * Time.deltaTime);
+    Vector2 targetBlend = new Vector2(_velocity.x, _velocity.z);
+    _currentBlend = Vector2.MoveTowards(_currentBlend, targetBlend, _blendSpeed * Time.deltaTime);
 
-    m_Animator.SetFloat(k_SpeedXHash, m_CurrentBlend.x);
-    m_Animator.SetFloat(k_SpeedZHash, m_CurrentBlend.y);
+    _animator.SetFloat(SpeedXHash, _currentBlend.x);
+    _animator.SetFloat(SpeedZHash, _currentBlend.y);
 }
 ```
 
@@ -159,30 +158,30 @@ private void Update()
 ```csharp
 public class WeaponAnimationSwapper : MonoBehaviour
 {
-    private Animator m_Animator;
-    private AnimatorOverrideController m_OverrideController;
+    private Animator _animator;
+    private AnimatorOverrideController _overrideController;
 
-    private readonly List<KeyValuePair<AnimationClip, AnimationClip>> m_Overrides =
+    private readonly List<KeyValuePair<AnimationClip, AnimationClip>> _overrides =
         new List<KeyValuePair<AnimationClip, AnimationClip>>();
 
     private void Awake()
     {
-        m_Animator = GetComponent<Animator>();
-        m_OverrideController = new AnimatorOverrideController(m_Animator.runtimeAnimatorController);
-        m_Animator.runtimeAnimatorController = m_OverrideController;
+        _animator = GetComponent<Animator>();
+        _overrideController = new AnimatorOverrideController(_animator.runtimeAnimatorController);
+        _animator.runtimeAnimatorController = _overrideController;
     }
 
     public void ApplyWeaponAnimations(AnimationClip attackClip, AnimationClip idleClip)
     {
-        m_Overrides.Clear();
+        _overrides.Clear();
         // Map original clips (keys) to replacement clips (values)
-        m_Overrides.Add(new KeyValuePair<AnimationClip, AnimationClip>(
-            m_OverrideController["BaseAttack"], attackClip));
-        m_Overrides.Add(new KeyValuePair<AnimationClip, AnimationClip>(
-            m_OverrideController["BaseIdle"], idleClip));
+        _overrides.Add(new KeyValuePair<AnimationClip, AnimationClip>(
+            _overrideController["BaseAttack"], attackClip));
+        _overrides.Add(new KeyValuePair<AnimationClip, AnimationClip>(
+            _overrideController["BaseIdle"], idleClip));
 
         // Apply all overrides in a single pass — one animator rebuild
-        m_OverrideController.ApplyOverrides(m_Overrides);
+        _overrideController.ApplyOverrides(_overrides);
     }
 }
 ```
@@ -198,15 +197,15 @@ public class WeaponAnimationSwapper : MonoBehaviour
 ```csharp
 public class CharacterFX : MonoBehaviour
 {
-    [SerializeField] private ParticleSystem m_FootstepFX;
-    [SerializeField] private AudioClip m_FootstepClip;
-    [SerializeField] private AudioSource m_AudioSource;
+    [SerializeField] private ParticleSystem _footstepFX;
+    [SerializeField] private AudioClip _footstepClip;
+    [SerializeField] private AudioSource _audioSource;
 
     // Called from Animation Event on the walk/run clip at each footfall frame
     private void OnFootstep()
     {
-        m_FootstepFX.Play();
-        m_AudioSource.PlayOneShot(m_FootstepClip);
+        _footstepFX.Play();
+        _audioSource.PlayOneShot(_footstepClip);
     }
 
     // Called from Animation Event on the attack clip at the impact frame
@@ -225,12 +224,12 @@ public class CharacterFX : MonoBehaviour
 - ❌ Avoid relying exclusively on Animator conditions for complex branching logic — drive transitions from code using `SetBool`/`SetTrigger` for clarity.
 
 ```csharp
-private static readonly int k_DeathStateHash = Animator.StringToHash("Death");
+private static readonly int DeathStateHash = Animator.StringToHash("Death");
 
 public void PlayDeath()
 {
     // Cross-fade to Death state over 0.2 seconds (normalised)
-    m_Animator.CrossFade(k_DeathStateHash, normalizedTransitionDuration: 0.2f);
+    _animator.CrossFade(DeathStateHash, normalizedTransitionDuration: 0.2f);
 }
 ```
 
@@ -242,21 +241,21 @@ public void PlayDeath()
 - ❌ Avoid modifying layer weights every frame — cache the target weight and lerp to it.
 
 ```csharp
-private static readonly int k_UpperBodyLayerIndex = 1;
+private static readonly int UpperBodyLayerIndex = 1;
 
-[SerializeField] private float m_AimLayerBlendSpeed = 5f;
-private float m_TargetAimWeight;
+[SerializeField] private float _aimLayerBlendSpeed = 5f;
+private float _targetAimWeight;
 
 public void SetAiming(bool isAiming)
 {
-    m_TargetAimWeight = isAiming ? 1f : 0f;
+    _targetAimWeight = isAiming ? 1f : 0f;
 }
 
 private void Update()
 {
-    float current = m_Animator.GetLayerWeight(k_UpperBodyLayerIndex);
-    float next = Mathf.MoveTowards(current, m_TargetAimWeight, m_AimLayerBlendSpeed * Time.deltaTime);
-    m_Animator.SetLayerWeight(k_UpperBodyLayerIndex, next);
+    float current = _animator.GetLayerWeight(UpperBodyLayerIndex);
+    float next = Mathf.MoveTowards(current, _targetAimWeight, _aimLayerBlendSpeed * Time.deltaTime);
+    _animator.SetLayerWeight(UpperBodyLayerIndex, next);
 }
 ```
 
@@ -269,22 +268,22 @@ private void Update()
 ```csharp
 public class RootMotionDriver : MonoBehaviour
 {
-    private Animator m_Animator;
-    private CharacterController m_Controller;
+    private Animator _animator;
+    private CharacterController _controller;
 
     private void Awake()
     {
-        m_Animator = GetComponent<Animator>();
-        m_Controller = GetComponent<CharacterController>();
-        m_Animator.applyRootMotion = true;
+        _animator = GetComponent<Animator>();
+        _controller = GetComponent<CharacterController>();
+        _animator.applyRootMotion = true;
     }
 
     // Called by Unity instead of applying root motion automatically
     private void OnAnimatorMove()
     {
-        Vector3 rootDelta = m_Animator.deltaPosition;
+        Vector3 rootDelta = _animator.deltaPosition;
         rootDelta.y = 0f; // Ignore vertical root motion — let gravity handle it
-        m_Controller.Move(rootDelta);
+        _controller.Move(rootDelta);
     }
 }
 ```
@@ -298,24 +297,24 @@ public class RootMotionDriver : MonoBehaviour
 ```csharp
 public class CharacterAnimatorSwapper : MonoBehaviour
 {
-    [SerializeField] private RuntimeAnimatorController m_SwordController;
-    [SerializeField] private RuntimeAnimatorController m_BowController;
+    [SerializeField] private RuntimeAnimatorController _swordController;
+    [SerializeField] private RuntimeAnimatorController _bowController;
 
-    private Animator m_Animator;
+    private Animator _animator;
 
     private void Awake()
     {
-        m_Animator = GetComponent<Animator>();
+        _animator = GetComponent<Animator>();
     }
 
     public void EquipSword()
     {
-        m_Animator.runtimeAnimatorController = m_SwordController;
+        _animator.runtimeAnimatorController = _swordController;
     }
 
     public void EquipBow()
     {
-        m_Animator.runtimeAnimatorController = m_BowController;
+        _animator.runtimeAnimatorController = _bowController;
     }
 }
 
@@ -329,22 +328,22 @@ public class CharacterAnimatorSwapper : MonoBehaviour
 // Debug: Log current animator state
 private void Update()
 {
-    var stateInfo = m_Animator.GetCurrentAnimatorStateInfo(0);
+    var stateInfo = _animator.GetCurrentAnimatorStateInfo(0);
     Debug.Log($"State hash: {stateInfo.shortNameHash}, NormalizedTime: {stateInfo.normalizedTime:F2}");
 }
 
 // Debug: Check if a specific state is currently playing
 private bool IsPlaying(string stateName)
 {
-    return m_Animator.GetCurrentAnimatorStateInfo(0).IsName(stateName);
+    return _animator.GetCurrentAnimatorStateInfo(0).IsName(stateName);
 }
 
 // Issue: State not transitioning — verify transition conditions are met
 private void DebugTransitionConditions()
 {
-    Debug.Log($"IsGrounded: {m_Animator.GetBool(AnimatorParams.IsGrounded)}");
-    Debug.Log($"Speed: {m_Animator.GetFloat(AnimatorParams.Speed)}");
-    Debug.Log($"IsInTransition: {m_Animator.IsInTransition(0)}");
+    Debug.Log($"IsGrounded: {_animator.GetBool(AnimatorParams.IsGrounded)}");
+    Debug.Log($"Speed: {_animator.GetFloat(AnimatorParams.Speed)}");
+    Debug.Log($"IsInTransition: {_animator.IsInTransition(0)}");
 }
 ```
 
@@ -354,13 +353,13 @@ private void DebugTransitionConditions()
 // Debug: Dump all parameters and their current values
 private void LogAnimatorParameters()
 {
-    foreach (var param in m_Animator.parameters)
+    foreach (var param in _animator.parameters)
     {
         string value = param.type switch
         {
-            AnimatorControllerParameterType.Bool    => m_Animator.GetBool(param.name).ToString(),
-            AnimatorControllerParameterType.Float   => m_Animator.GetFloat(param.name).ToString("F3"),
-            AnimatorControllerParameterType.Int     => m_Animator.GetInteger(param.name).ToString(),
+            AnimatorControllerParameterType.Bool    => _animator.GetBool(param.name).ToString(),
+            AnimatorControllerParameterType.Float   => _animator.GetFloat(param.name).ToString("F3"),
+            AnimatorControllerParameterType.Int     => _animator.GetInteger(param.name).ToString(),
             AnimatorControllerParameterType.Trigger => "(trigger)",
             _                                       => "unknown"
         };

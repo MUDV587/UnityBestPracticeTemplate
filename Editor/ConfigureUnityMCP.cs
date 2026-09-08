@@ -4,6 +4,7 @@ using System.IO;
 
 namespace Unity.BestPractices.Editor
 {
+#if UNITY_6000_0_OR_NEWER
     /// <summary>
     /// Creates <c>UserSettings/mcp.json</c> to configure Unity MCP (Model Context Protocol),
     /// enabling AI assistants such as GitHub Copilot and Claude Code to interact with the
@@ -97,4 +98,5 @@ namespace Unity.BestPractices.Editor
                 "mcp.json");
         }
     }
+#endif
 }

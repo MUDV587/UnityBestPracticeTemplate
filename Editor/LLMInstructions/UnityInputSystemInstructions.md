@@ -19,9 +19,9 @@ Table of contents:
 
 # Unity Version-Specific Instructions
 
-- ℹ️ This project uses Unity 6.3 and the **New Input System** package. Do not use the legacy `Input` class (`Input.GetKey`, `Input.GetAxis`).
+- ℹ️ This project uses Unity 2022.3 LTS and the **New Input System** package. Do not use the legacy `Input` class (`Input.GetKey`, `Input.GetAxis`).
 - ℹ️ The New Input System package must be installed via **Package Manager** and the Active Input Handling must be set to **Input System Package (New)** or **Both** in **Project Settings > Player**.
-- ℹ️ Unity 6 supports Enhanced Touch API (`EnhancedTouchSupport.Enable()`) for mobile — prefer it over polling `Input.touches`.
+- ℹ️ The New Input System supports the Enhanced Touch API (`EnhancedTouchSupport.Enable()`) for mobile — prefer it over polling `Input.touches`.
 - ℹ️ Use `InputSystem.onEvent` for global diagnostics and low-level device handling only.
 
 # Core Concepts
@@ -43,18 +43,18 @@ Table of contents:
 public class PlayerJump : MonoBehaviour
 {
     // Drag the Jump action from the InputActionAsset into this field in the Inspector
-    [SerializeField] private InputActionReference m_JumpAction;
+    [SerializeField] private InputActionReference _jumpAction;
 
     private void OnEnable()
     {
-        m_JumpAction.action.performed += HandleJump;
-        m_JumpAction.action.Enable();
+        _jumpAction.action.performed += HandleJump;
+        _jumpAction.action.Enable();
     }
 
     private void OnDisable()
     {
-        m_JumpAction.action.performed -= HandleJump;
-        m_JumpAction.action.Disable();
+        _jumpAction.action.performed -= HandleJump;
+        _jumpAction.action.Disable();
     }
 
     private void HandleJump(InputAction.CallbackContext context)
@@ -77,21 +77,21 @@ public class PlayerJump : MonoBehaviour
 // Using PlayerInput with C# Events behavior
 public class PlayerInputHandler : MonoBehaviour
 {
-    private PlayerInput m_PlayerInput;
+    private PlayerInput _playerInput;
 
     private void Awake()
     {
-        m_PlayerInput = GetComponent<PlayerInput>();
+        _playerInput = GetComponent<PlayerInput>();
     }
 
     private void OnEnable()
     {
-        m_PlayerInput.onActionTriggered += HandleAction;
+        _playerInput.onActionTriggered += HandleAction;
     }
 
     private void OnDisable()
     {
-        m_PlayerInput.onActionTriggered -= HandleAction;
+        _playerInput.onActionTriggered -= HandleAction;
     }
 
     private void HandleAction(InputAction.CallbackContext context)
@@ -122,16 +122,16 @@ public class PlayerInputHandler : MonoBehaviour
 ```csharp
 public class InputMapSwitcher : MonoBehaviour
 {
-    [SerializeField] private PlayerInput m_PlayerInput;
+    [SerializeField] private PlayerInput _playerInput;
 
     public void SwitchToGameplay()
     {
-        m_PlayerInput.SwitchCurrentActionMap("Gameplay");
+        _playerInput.SwitchCurrentActionMap("Gameplay");
     }
 
     public void SwitchToUI()
     {
-        m_PlayerInput.SwitchCurrentActionMap("UI");
+        _playerInput.SwitchCurrentActionMap("UI");
     }
 }
 ```
@@ -150,38 +150,38 @@ public class InputMapSwitcher : MonoBehaviour
 ```csharp
 public class PlayerMovement : MonoBehaviour
 {
-    [SerializeField] private InputActionReference m_MoveAction;
+    [SerializeField] private InputActionReference _moveAction;
 
-    private Vector2 m_MoveInput;
+    private Vector2 _moveInput;
 
     private void OnEnable()
     {
-        m_MoveAction.action.performed += HandleMovePerformed;
-        m_MoveAction.action.canceled += HandleMoveCanceled;
-        m_MoveAction.action.Enable();
+        _moveAction.action.performed += HandleMovePerformed;
+        _moveAction.action.canceled += HandleMoveCanceled;
+        _moveAction.action.Enable();
     }
 
     private void OnDisable()
     {
-        m_MoveAction.action.performed -= HandleMovePerformed;
-        m_MoveAction.action.canceled -= HandleMoveCanceled;
-        m_MoveAction.action.Disable();
+        _moveAction.action.performed -= HandleMovePerformed;
+        _moveAction.action.canceled -= HandleMoveCanceled;
+        _moveAction.action.Disable();
     }
 
     private void HandleMovePerformed(InputAction.CallbackContext context)
     {
-        m_MoveInput = context.ReadValue<Vector2>();
+        _moveInput = context.ReadValue<Vector2>();
     }
 
     private void HandleMoveCanceled(InputAction.CallbackContext context)
     {
-        m_MoveInput = Vector2.zero;
+        _moveInput = Vector2.zero;
     }
 
     private void FixedUpdate()
     {
-        // Apply cached m_MoveInput to physics — no polling in this method
-        ApplyMovement(m_MoveInput);
+        // Apply cached _moveInput to physics — no polling in this method
+        ApplyMovement(_moveInput);
     }
 
     private void ApplyMovement(Vector2 direction) { /* ... */ }
@@ -199,19 +199,19 @@ public class PlayerMovement : MonoBehaviour
 // Correct pattern for direct action management
 public class AbilityActivator : MonoBehaviour
 {
-    [SerializeField] private InputActionReference m_AbilityAction;
+    [SerializeField] private InputActionReference _abilityAction;
 
     private void OnEnable()
     {
-        m_AbilityAction.action.performed += HandleAbility;
-        m_AbilityAction.action.Enable();
+        _abilityAction.action.performed += HandleAbility;
+        _abilityAction.action.Enable();
     }
 
     private void OnDisable()
     {
         // Unsubscribe before Disable to avoid a callback firing during disable
-        m_AbilityAction.action.performed -= HandleAbility;
-        m_AbilityAction.action.Disable();
+        _abilityAction.action.performed -= HandleAbility;
+        _abilityAction.action.Disable();
     }
 
     private void HandleAbility(InputAction.CallbackContext context)
@@ -225,26 +225,26 @@ public class AbilityActivator : MonoBehaviour
 
 - ✅ Use event-driven callbacks as the primary input pattern — store the value and use it in `Update`/`FixedUpdate`.
 - ✅ Cache `ReadValue<T>()` results in fields when you need the value every frame (e.g. movement direction).
-- ❌ Avoid calling `m_MoveAction.action.ReadValue<Vector2>()` inside `Update` every frame — subscribe to callbacks instead.
+- ❌ Avoid calling `_moveAction.action.ReadValue<Vector2>()` inside `Update` every frame — subscribe to callbacks instead.
 - ❌ Avoid `Input.GetKey` / `Input.GetAxis` entirely when the New Input System is active.
 
 ```csharp
 // AVOID — polling ReadValue in Update
 private void Update()
 {
-    Vector2 move = m_MoveAction.action.ReadValue<Vector2>(); // allocates and polls every frame
+    Vector2 move = _moveAction.action.ReadValue<Vector2>(); // allocates and polls every frame
     transform.Translate(move * Time.deltaTime);
 }
 
 // PREFER — event-driven with cached value
-private Vector2 m_CachedMove;
+private Vector2 _cachedMove;
 
-private void HandleMovePerformed(InputAction.CallbackContext ctx) => m_CachedMove = ctx.ReadValue<Vector2>();
-private void HandleMoveCanceled(InputAction.CallbackContext ctx) => m_CachedMove = Vector2.zero;
+private void HandleMovePerformed(InputAction.CallbackContext ctx) => _cachedMove = ctx.ReadValue<Vector2>();
+private void HandleMoveCanceled(InputAction.CallbackContext ctx) => _cachedMove = Vector2.zero;
 
 private void Update()
 {
-    transform.Translate(m_CachedMove * Time.deltaTime);
+    transform.Translate(_cachedMove * Time.deltaTime);
 }
 ```
 
@@ -258,28 +258,28 @@ private void Update()
 // Using the generated C# class from the .inputactions asset
 public class GameInputController : MonoBehaviour
 {
-    private GameInputActions m_InputActions;
+    private GameInputActions _inputActions;
 
     private void Awake()
     {
-        m_InputActions = new GameInputActions();
+        _inputActions = new GameInputActions();
     }
 
     private void OnEnable()
     {
-        m_InputActions.Gameplay.Enable();
-        m_InputActions.Gameplay.Jump.performed += HandleJump;
+        _inputActions.Gameplay.Enable();
+        _inputActions.Gameplay.Jump.performed += HandleJump;
     }
 
     private void OnDisable()
     {
-        m_InputActions.Gameplay.Jump.performed -= HandleJump;
-        m_InputActions.Gameplay.Disable();
+        _inputActions.Gameplay.Jump.performed -= HandleJump;
+        _inputActions.Gameplay.Disable();
     }
 
     private void OnDestroy()
     {
-        m_InputActions.Dispose();
+        _inputActions.Dispose();
     }
 
     private void HandleJump(InputAction.CallbackContext ctx)
@@ -299,15 +299,15 @@ public class GameInputController : MonoBehaviour
 ```csharp
 public class RebindUI : MonoBehaviour
 {
-    [SerializeField] private InputActionReference m_ActionToRebind;
+    [SerializeField] private InputActionReference _actionToRebind;
 
-    private InputActionRebindingExtensions.RebindingOperation m_RebindOperation;
+    private InputActionRebindingExtensions.RebindingOperation _rebindOperation;
 
     public void StartRebind()
     {
-        m_ActionToRebind.action.Disable();
+        _actionToRebind.action.Disable();
 
-        m_RebindOperation = m_ActionToRebind.action.PerformInteractiveRebinding()
+        _rebindOperation = _actionToRebind.action.PerformInteractiveRebinding()
             .WithControlsExcluding("Mouse")
             .OnMatchWaitForAnother(0.1f)
             .OnComplete(operation => CompleteRebind())
@@ -316,16 +316,16 @@ public class RebindUI : MonoBehaviour
 
     private void CompleteRebind()
     {
-        m_RebindOperation.Dispose();
-        m_ActionToRebind.action.Enable();
+        _rebindOperation.Dispose();
+        _actionToRebind.action.Enable();
 
-        string json = m_ActionToRebind.action.SaveBindingOverridesAsJson();
+        string json = _actionToRebind.action.SaveBindingOverridesAsJson();
         PlayerPrefs.SetString("Rebinds", json);
     }
 
     private void OnDestroy()
     {
-        m_RebindOperation?.Dispose();
+        _rebindOperation?.Dispose();
     }
 }
 ```
@@ -433,7 +433,7 @@ private void DebugAction(InputAction action)
 // Debug: Read action value directly in Update
 private void Update()
 {
-    var moveAction = m_InputActions.Gameplay.Move;
+    var moveAction = _inputActions.Gameplay.Move;
     Vector2 value = moveAction.ReadValue<Vector2>();
     Debug.Log($"Move: {value}, Phase: {moveAction.phase}");
 }

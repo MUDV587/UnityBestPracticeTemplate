@@ -54,13 +54,13 @@ With domain reload disabled, **static fields persist between play sessions**:
 
 ```csharp
 // This value WON'T reset when you stop and start play mode
-private static int s_playerCount = 0;
+private static int _playerCount = 0;
 
 // Fix: Reset in RuntimeInitializeOnLoadMethod
 [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
 private static void ResetStatics()
 {
-    s_playerCount = 0;
+    _playerCount = 0;
 }
 ```
 
@@ -89,7 +89,7 @@ See [Unity Documentation: Domain Reloading](https://docs.unity3d.com/Manual/Doma
 
 ### .editorconfig (Code Style)
 
-Unity 6 respects an `.editorconfig` file at the project root for C# formatting rules. Rider and Visual Studio both use it.
+Unity respects an `.editorconfig` file at the project root for C# formatting rules. Rider and Visual Studio both use it.
 
 ```ini
 # .editorconfig — place at project root (next to Assets/)
@@ -297,9 +297,9 @@ Assembly definitions reduce recompilation scope and enforce code boundaries. For
 [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
 private static void ResetStatics()
 {
-    s_instance = null;
-    s_playerCount = 0;
-    s_cache.Clear();
+    _instance = null;
+    _playerCount = 0;
+    _cache.Clear();
 }
 ```
 
@@ -335,6 +335,6 @@ Also watch for **static events** — subscribers accumulate across Play sessions
 
 ## Version Information
 
-- **Target Unity Version:** Unity 6.3 (6000.3.x)
+- **Target Unity Version:** Unity 2022.3 LTS
 - **Render Pipeline:** URP 17.3.0
 - **Last Updated:** February 2026

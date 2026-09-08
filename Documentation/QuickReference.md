@@ -1,25 +1,28 @@
 # Unity Best Practices — Quick Reference
 
-## Field Naming Prefixes
+## Field Naming
 
-| Prefix | Use |
+| Style | Use |
 |---|---|
-| `m_` | Private instance fields (`private int m_Health;`) |
-| `s_` | Static fields (`private static int s_Count;`) |
-| `k_` | Constants (`private const int k_MaxHealth = 100;`) |
-| _(none)_ | Properties, public fields, parameters, local vars |
+| `_camelCase` | Private/protected instance and static fields (`private int _health;`) |
+| PascalCase | Constants and static readonly (`private const int MaxHealth = 100;`) |
+| PascalCase | Public fields and properties (`public int MaxHealth`) |
+| camelCase | Parameters, local variables |
 
 ## Class Member Order
 
 1. Using statements
 2. Namespace declaration
-3. Fields (serialized → private → static → constants)
-4. Properties
-5. Events
-6. MonoBehaviour methods (Awake → OnEnable → Start → OnDisable → OnDestroy → FixedUpdate → Update → LateUpdate)
-7. Public methods
-8. Private methods
-9. Nested classes / structs
+3. Fields (`const` → `static readonly` → `static` → instance; `[SerializeField]` first)
+4. Constructors
+5. Properties
+6. Events
+7. MonoBehaviour methods (Awake → OnEnable → Start → OnDisable → OnDestroy → FixedUpdate → Update → LateUpdate)
+8. Public methods
+9. Private methods
+10. Nested classes / structs
+
+Within each group: access level public → internal → protected → private, static before instance.
 
 ## Method Naming
 
@@ -28,6 +31,12 @@
 | `ProcessX` | Game logic computation | `ProcessDamage()` |
 | `HandleX` | Event callback | `HandlePlayerDied()` |
 | `IsX` / `HasX` / `CanX` | Boolean query | `IsAlive()`, `CanJump()` |
+| `XxxAsync` | Async method (Task-returning) | `LoadDataAsync()`, `SaveAsync()` |
+
+## Local Variables
+
+- Use `var` when the type is apparent from the right side (`var player = GetComponent<Player>();`); explicit types otherwise.
+- Fields, properties, and method signatures always use explicit types — `var` is for locals only.
 | `SetX` / `GetX` | Explicit accessor | `SetHealth(int)` |
 
 ## Event Conventions
@@ -58,7 +67,7 @@ if (condition) {
 - Use `CompareTag("Tag")` not `gameObject.tag == "Tag"` (string alloc)
 - Use `TryGetComponent<T>()` not `GetComponent<T>()` (avoids exception on miss)
 - Prefer `ObjectPool<T>` over Instantiate/Destroy for frequent objects
-- Cache `Animator` param hashes: `private static readonly int k_SpeedHash = Animator.StringToHash("Speed");`
+- Cache `Animator` param hashes: `private static readonly int SpeedHash = Animator.StringToHash("Speed");`
 - Use `MaterialPropertyBlock` for per-instance shader values (not `material.SetX`)
 
 ## UI Toolkit — UXML/USS BEM Naming
@@ -71,14 +80,19 @@ block__element--modifier
 - Modifier: `inventory-panel__slot--selected`
 - CSS variables: `--color-primary`, `--spacing-md`
 
-## Unity 6 Async — Awaitable
+## Async — Coroutines (Unity 2022.3)
 
 ```csharp
-// Unity 6+
-await Awaitable.WaitForSecondsAsync(delay, cancellationToken);
+// Unity 2022.3 — no Awaitable; use coroutines
+StartCoroutine(DelayCo(delay));
 
-// Guard after every await:
-if (this == null || !isActiveAndEnabled) return;
+private IEnumerator DelayCo(float delay)
+{
+    yield return new WaitForSeconds(delay);
+
+    // Guard after every yield:
+    if (this == null || !isActiveAndEnabled) yield break;
+}
 ```
 
 ## Assembly Definitions

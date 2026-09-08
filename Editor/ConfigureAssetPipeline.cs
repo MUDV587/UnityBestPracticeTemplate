@@ -42,7 +42,7 @@ namespace Unity.BestPractices.Editor
         }
 
         // ── Import Worker Count % ─────────────────────────────────────────────
-        // EditorPrefs key confirmed in Unity 6 source: "AssetPipelineImportWorkerCountPercentage"
+        // EditorPrefs key: "AssetPipelineImportWorkerCountPercentage"
         // Default: 25. Machine-local.
 
         private const string k_WorkerCountKey = "AssetPipelineImportWorkerCountPercentage";

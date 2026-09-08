@@ -19,8 +19,8 @@ Table of contents:
 
 # Unity Version-Specific Instructions
 
-- ℹ️ This project uses Unity 6.3. Use the Unity Test Framework (UTF) 2.x which ships with Unity 6.
-- ℹ️ Unity 6 supports `Awaitable`-based tests in PlayMode via `[UnityTest]` with `yield return` or via async test methods with the `UnityTestAttribute`.
+- ℹ️ This project uses Unity 2022.3 LTS. Use the Unity Test Framework (UTF) 1.3.x which ships with Unity 2022.3 (or update via Package Manager).
+- ℹ️ PlayMode tests use `[UnityTest]` with an `IEnumerator` method and `yield return` — async `Awaitable`-based tests are not available on Unity 2022.3.
 - ℹ️ Prefer `[UnityTest]` with `IEnumerator` for PlayMode tests that need to wait for frames or physics.
 - ℹ️ Use `UnityEngine.TestTools.LogAssert` to assert expected log messages before they occur.
 
@@ -72,19 +72,19 @@ public class DamageCalculatorTests
 [TestFixture]
 public class PlayerControllerTests
 {
-    private GameObject m_PlayerGo;
+    private GameObject _playerGo;
 
     [SetUp]
     public void SetUp()
     {
-        m_PlayerGo = new GameObject("Player");
-        m_PlayerGo.AddComponent<PlayerController>();
+        _playerGo = new GameObject("Player");
+        _playerGo.AddComponent<PlayerController>();
     }
 
     [TearDown]
     public void TearDown()
     {
-        Object.Destroy(m_PlayerGo);
+        Object.Destroy(_playerGo);
     }
 
     [UnityTest]
@@ -96,7 +96,7 @@ public class PlayerControllerTests
         yield return null;
 
         // Assert
-        var controller = m_PlayerGo.GetComponent<PlayerController>();
+        var controller = _playerGo.GetComponent<PlayerController>();
         Assert.IsTrue(controller.IsInitialized);
     }
 }
@@ -177,18 +177,18 @@ PlayMode test assembly (`MyGame.Gameplay.PlayModeTests.asmdef`):
 [Category("Gameplay")]
 public class HealthSystemTests
 {
-    private HealthSystem m_Health;
+    private HealthSystem _health;
 
     [SetUp]
     public void SetUp()
     {
-        m_Health = new HealthSystem(maxHealth: 100f);
+        _health = new HealthSystem(maxHealth: 100f);
     }
 
     [TearDown]
     public void TearDown()
     {
-        m_Health = null;
+        _health = null;
     }
 
     [TestCase(10f, 90f)]
@@ -196,8 +196,8 @@ public class HealthSystemTests
     [TestCase(0f, 100f)]
     public void TakeDamage_ReducesCurrentHealth(float damage, float expectedHealth)
     {
-        m_Health.TakeDamage(damage);
-        Assert.AreEqual(expectedHealth, m_Health.Current, 0.001f);
+        _health.TakeDamage(damage);
+        Assert.AreEqual(expectedHealth, _health.Current, 0.001f);
     }
 }
 ```
@@ -356,51 +356,51 @@ public class EnemyStateMachine
 [TestFixture]
 public class EnemyStateMachineTests
 {
-    private EnemyStateMachine m_StateMachine;
+    private EnemyStateMachine _stateMachine;
 
     [SetUp]
     public void SetUp()
     {
-        m_StateMachine = new EnemyStateMachine();
+        _stateMachine = new EnemyStateMachine();
     }
 
     [Test]
     public void Update_WhenIdleAndPlayerNear_TransitionsToChase()
     {
         // Arrange — starts in Idle by default
-        Assert.AreEqual(EnemyState.Idle, m_StateMachine.CurrentState);
+        Assert.AreEqual(EnemyState.Idle, _stateMachine.CurrentState);
 
         // Act
-        m_StateMachine.Update(distanceToPlayer: 5f);
+        _stateMachine.Update(distanceToPlayer: 5f);
 
         // Assert
-        Assert.AreEqual(EnemyState.Chase, m_StateMachine.CurrentState);
+        Assert.AreEqual(EnemyState.Chase, _stateMachine.CurrentState);
     }
 
     [Test]
     public void Update_WhenChasingAndPlayerFar_TransitionsToIdle()
     {
         // Arrange
-        m_StateMachine.SetState(EnemyState.Chase);
+        _stateMachine.SetState(EnemyState.Chase);
 
         // Act
-        m_StateMachine.Update(distanceToPlayer: 20f);
+        _stateMachine.Update(distanceToPlayer: 20f);
 
         // Assert
-        Assert.AreEqual(EnemyState.Idle, m_StateMachine.CurrentState);
+        Assert.AreEqual(EnemyState.Idle, _stateMachine.CurrentState);
     }
 
     [Test]
     public void Update_WhenChasingAndPlayerClose_RemainsChasing()
     {
         // Arrange
-        m_StateMachine.SetState(EnemyState.Chase);
+        _stateMachine.SetState(EnemyState.Chase);
 
         // Act
-        m_StateMachine.Update(distanceToPlayer: 5f);
+        _stateMachine.Update(distanceToPlayer: 5f);
 
         // Assert
-        Assert.AreEqual(EnemyState.Chase, m_StateMachine.CurrentState);
+        Assert.AreEqual(EnemyState.Chase, _stateMachine.CurrentState);
     }
 }
 ```

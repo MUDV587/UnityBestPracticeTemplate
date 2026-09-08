@@ -20,7 +20,7 @@ namespace Unity.BestPractices.Editor
         private string m_AuthorName = "";
         private string m_AuthorEmail = "";
         private string m_AuthorUrl = "";
-        private string m_UnityVersion = "6000.3";
+        private string m_UnityVersion = "2022.3";
 
         // ── Structure toggles ────────────────────────────────────────────────────
         private bool m_IncludeRuntime = true;
@@ -131,7 +131,7 @@ namespace Unity.BestPractices.Editor
             m_Version = LabeledTextField("Version", m_Version,
                 "Semantic version: MAJOR.MINOR.PATCH");
             m_UnityVersion = LabeledTextField("Unity Min Version", m_UnityVersion,
-                "Minimum Unity version required (e.g. 6000.3)");
+                "Minimum Unity version required (e.g. 2022.3)");
 
             GUILayout.Space(4);
             GUILayout.Label("Description", EditorStyles.miniLabel);

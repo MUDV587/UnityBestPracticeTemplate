@@ -17,10 +17,10 @@ Table of contents:
 
 # Unity Version-Specific Instructions
 
-- ℹ️ This project uses Unity 6.3. Prefer `await Awaitable` patterns over coroutines for async scene loading.
-- ℹ️ Unity 6 introduces `SceneManager.LoadSceneAsync` returning an `AsyncOperation` — this is unchanged from Unity 2022, but can be awaited via `.ToAwaitable()` (Unity 6 extension).
+- ℹ️ This project uses Unity 2022.3 LTS. Use coroutines (`IEnumerator` + `yield return`) for async scene loading — there is no `Awaitable` on Unity 2022.3.
+- ℹ️ `SceneManager.LoadSceneAsync` returns an `AsyncOperation` — wait on it with `yield return operation` or poll `isDone`; it cannot be awaited directly on Unity 2022.3.
 - ℹ️ `Physics.simulationMode` and other subsystems reset on scene unload — account for this in service initialization.
-- ℹ️ Unity 6 `SceneManager` API is in `UnityEngine.SceneManagement` — always include this namespace.
+- ℹ️ The `SceneManager` API is in `UnityEngine.SceneManagement` — always include this namespace.
 
 # Core Concepts
 
@@ -42,21 +42,21 @@ using UnityEngine.SceneManagement;
 
 public class SceneLoader : MonoBehaviour
 {
-    public async Awaitable LoadSceneAsync(string sceneName)
+    public IEnumerator LoadSceneAsync(string sceneName)
     {
         AsyncOperation operation = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Single);
 
         if (operation == null)
         {
             Debug.LogError($"[SceneLoader] Scene not found in build settings: {sceneName}");
-            return;
+            yield break;
         }
 
         while (!operation.isDone)
         {
             float progress = Mathf.Clamp01(operation.progress / 0.9f);
             Debug.Log($"[SceneLoader] Loading {sceneName}: {progress:P0}");
-            await Awaitable.NextFrameAsync();
+            yield return null;
         }
 
         Debug.Log($"[SceneLoader] Scene loaded: {sceneName}");
@@ -74,25 +74,25 @@ public class SceneLoader : MonoBehaviour
 ```csharp
 public class AdditiveSceneManager : MonoBehaviour
 {
-    private Scene m_LoadedGameplayScene;
+    private Scene _loadedGameplayScene;
 
-    public async Awaitable LoadGameplaySceneAdditive(string sceneName)
+    public IEnumerator LoadGameplaySceneAdditive(string sceneName)
     {
         AsyncOperation operation = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
-        await operation; // Unity 6 supports awaiting AsyncOperation directly
+        yield return operation;
 
-        m_LoadedGameplayScene = SceneManager.GetSceneByName(sceneName);
-        SceneManager.SetActiveScene(m_LoadedGameplayScene);
+        _loadedGameplayScene = SceneManager.GetSceneByName(sceneName);
+        SceneManager.SetActiveScene(_loadedGameplayScene);
 
         Debug.Log($"[SceneManager] Additively loaded: {sceneName}");
     }
 
-    public async Awaitable UnloadGameplayScene()
+    public IEnumerator UnloadGameplayScene()
     {
-        if (!m_LoadedGameplayScene.isLoaded)
-            return;
+        if (!_loadedGameplayScene.isLoaded)
+            yield break;
 
-        await SceneManager.UnloadSceneAsync(m_LoadedGameplayScene);
+        yield return SceneManager.UnloadSceneAsync(_loadedGameplayScene);
         Debug.Log("[SceneManager] Gameplay scene unloaded.");
     }
 }
@@ -183,18 +183,18 @@ public class SceneEventListener : MonoBehaviour
 - ❌ Never unload a scene while objects in it are still in use — null reference exceptions will follow.
 
 ```csharp
-public async Awaitable UnloadSceneSafe(string sceneName)
+public IEnumerator UnloadSceneSafe(string sceneName)
 {
     Scene scene = SceneManager.GetSceneByName(sceneName);
 
     if (!scene.IsValid() || !scene.isLoaded)
     {
         Debug.LogWarning($"[SceneLoader] Scene not loaded: {sceneName}");
-        return;
+        yield break;
     }
 
-    await SceneManager.UnloadSceneAsync(scene);
-    await Resources.UnloadUnusedAssets();
+    yield return SceneManager.UnloadSceneAsync(scene);
+    yield return Resources.UnloadUnusedAssets();
 
     Debug.Log($"[SceneLoader] Unloaded and cleaned up: {sceneName}");
 }
@@ -227,11 +227,11 @@ public async Awaitable UnloadSceneSafe(string sceneName)
 [CreateAssetMenu(fileName = "ServiceLocator", menuName = "Services/ServiceLocator")]
 public class ServiceLocatorSO : ScriptableObject
 {
-    [SerializeField] private AudioManager m_AudioManager;
-    [SerializeField] private InputManager m_InputManager;
+    [SerializeField] private AudioManager _audioManager;
+    [SerializeField] private InputManager _inputManager;
 
-    public AudioManager Audio => m_AudioManager;
-    public InputManager Input => m_InputManager;
+    public AudioManager Audio => _audioManager;
+    public InputManager Input => _inputManager;
 }
 ```
 
@@ -245,15 +245,15 @@ This pattern uses three scenes:
 ```csharp
 public class GameSceneTransitioner : MonoBehaviour
 {
-    private const string k_LoadingScreenScene = "LoadingScreen";
+    private const string LoadingScreenScene = "LoadingScreen";
 
-    [SerializeField] private LoadingScreenController m_LoadingScreen;
+    [SerializeField] private LoadingScreenController _loadingScreen;
 
-    public async Awaitable TransitionToScene(string targetSceneName)
+    public IEnumerator TransitionToScene(string targetSceneName)
     {
         // Step 1: Load the loading screen additively
-        await SceneManager.LoadSceneAsync(k_LoadingScreenScene, LoadSceneMode.Additive);
-        Scene loadingScene = SceneManager.GetSceneByName(k_LoadingScreenScene);
+        yield return SceneManager.LoadSceneAsync(LoadingScreenScene, LoadSceneMode.Additive);
+        Scene loadingScene = SceneManager.GetSceneByName(LoadingScreenScene);
 
         // Step 2: Begin loading the target scene without activating it yet
         AsyncOperation loadOp = SceneManager.LoadSceneAsync(targetSceneName, LoadSceneMode.Additive);
@@ -263,25 +263,25 @@ public class GameSceneTransitioner : MonoBehaviour
         while (loadOp.progress < 0.9f)
         {
             float progress = Mathf.Clamp01(loadOp.progress / 0.9f);
-            m_LoadingScreen.SetProgress(progress);
-            await Awaitable.NextFrameAsync();
+            _loadingScreen.SetProgress(progress);
+            yield return null;
         }
 
         // Step 4: Minimum display time to avoid loading screen flash
-        m_LoadingScreen.SetProgress(1f);
-        await Awaitable.WaitForSecondsAsync(0.5f);
+        _loadingScreen.SetProgress(1f);
+        yield return new WaitForSeconds(0.5f);
 
         // Step 5: Activate the target scene
         loadOp.allowSceneActivation = true;
         while (!loadOp.isDone)
-            await Awaitable.NextFrameAsync();
+            yield return null;
 
         // Step 6: Set the new scene as active
         SceneManager.SetActiveScene(SceneManager.GetSceneByName(targetSceneName));
 
         // Step 7: Unload the old scene (if there is one to unload) and the loading screen
         // (caller is responsible for passing the previous scene name if needed)
-        await SceneManager.UnloadSceneAsync(loadingScene);
+        yield return SceneManager.UnloadSceneAsync(loadingScene);
 
         Debug.Log($"[Transition] Scene ready: {targetSceneName}");
     }
@@ -290,13 +290,13 @@ public class GameSceneTransitioner : MonoBehaviour
 // Simple loading screen controller
 public class LoadingScreenController : MonoBehaviour
 {
-    [SerializeField] private Slider m_ProgressBar;
-    [SerializeField] private TMP_Text m_PercentageText;
+    [SerializeField] private Slider _progressBar;
+    [SerializeField] private TMP_Text _percentageText;
 
     public void SetProgress(float normalizedProgress)
     {
-        m_ProgressBar.value = normalizedProgress;
-        m_PercentageText.text = $"{normalizedProgress:P0}";
+        _progressBar.value = normalizedProgress;
+        _percentageText.text = $"{normalizedProgress:P0}";
     }
 }
 ```

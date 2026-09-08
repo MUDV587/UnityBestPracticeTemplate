@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Package identity
 
 - Package ID: `com.unity.best-practices`
-- Unity minimum version: 6000.3
+- Unity minimum version: 2022.3
 - Installed via git URL: `https://github.com/krogh-jacobsen/UnityBestPracticeTemplate.git`
 - Two assemblies: `com.unity.best-practices.Runtime.asmdef` and `com.unity.best-practices.Editor.asmdef`
 
@@ -50,18 +50,19 @@ File naming follows Unity's convention: `{priority}-{menu path}-{default filenam
 
 These apply to all `.cs` files in this repo and in host projects using the LLM instructions.
 
-**Field prefixes**
-- `m_` — private instance fields
-- `s_` — static fields
-- `k_` — constants
+**Field naming**
+- `_camelCase` — private/protected instance and static fields
+- PascalCase — constants, static readonly, and public fields
 
 **Class member order**
-1. Using statements → namespace → fields → properties → events → MonoBehaviour methods (Awake, OnEnable, Start, OnDisable, Update order) → public methods → private methods
+1. Using statements → namespace → fields → constructors → properties → events → MonoBehaviour methods (Awake, OnEnable, Start, OnDisable, Update order) → public methods → private methods
+2. Within each group: access level public → internal → protected → private, static before instance; fields ordered `const` → `static readonly` → `static` → instance with `[SerializeField]` first
 
 **Method naming**
 - `ProcessX` — game logic
 - `HandleX` — event callbacks
 - `IsX` / `HasX` / `CanX` — boolean queries
+- `XxxAsync` — Task-returning async methods
 
 **Events**
 - Past-tense names (e.g. `PlayerDied`, `ScoreChanged`)

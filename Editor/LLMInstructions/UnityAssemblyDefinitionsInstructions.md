@@ -20,9 +20,9 @@ Table of contents:
 
 # Unity Version-Specific Instructions
 
-- ℹ️ This project uses Unity 6.3. Assembly Definition Files (`.asmdef`) are supported since Unity 2017.3 and the format is stable in Unity 6.
-- ℹ️ Unity 6 compiles assemblies using Roslyn — the compilation pipeline is unchanged, but assembly isolation becomes even more important as project scale grows.
-- ℹ️ Unity 6 supports the `rootNamespace` field in `.asmdef` — always set it to match the namespace used by scripts in that assembly.
+- ℹ️ This project uses Unity 2022.3 LTS. Assembly Definition Files (`.asmdef`) are supported since Unity 2017.3 and the format is stable.
+- ℹ️ Unity compiles assemblies using Roslyn — the compilation pipeline is unchanged, but assembly isolation becomes even more important as project scale grows.
+- ℹ️ Unity 2022.2+ supports the `rootNamespace` field in `.asmdef` — always set it to match the namespace used by scripts in that assembly.
 - ℹ️ The Unity Editor assembly (`Assembly-CSharp-Editor`) and the main assembly (`Assembly-CSharp`) still exist for scripts not covered by any `.asmdef` — avoid leaving scripts in these fallback assemblies.
 
 # Why Use Assembly Definitions

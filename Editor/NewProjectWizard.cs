@@ -155,7 +155,7 @@ namespace Unity.BestPractices.Editor
 
             DrawStep(
                 "8. Project Settings",
-                "Applies recommended Unity 6 settings: Enter Play Mode, IL2CPP backend, .NET Standard 2.1, Input System, Incremental GC, Asset Serialization, Version Control, Create at Origin, New Hierarchy, Asset Manager import location.",
+                "Applies recommended project settings: Enter Play Mode, .NET Standard 2.1 API compatibility, Input System, Incremental GC, Asset Serialization, Version Control, Create at Origin, Asset Manager import location.",
                 hasEnterPlayMode ? "Enter Play Mode enabled" : "Not configured",
                 hasEnterPlayMode,
                 "Run",

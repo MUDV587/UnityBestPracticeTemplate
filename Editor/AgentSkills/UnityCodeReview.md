@@ -34,12 +34,16 @@ After all issues, output a **Summary** with total counts per severity and an ove
 
 ### Naming Conventions
 
-- [ ] Private instance fields use `m_` prefix → `private int m_health;`
-- [ ] Static fields use `s_` prefix → `private static int s_instanceCount;`
-- [ ] Constants and static readonly values use `k_` prefix → `private const int k_maxPlayers = 4;`
+- [ ] Private/protected instance and static fields use `_camelCase` → `private int _health;`
+- [ ] Constants and static readonly values are PascalCase → `private const int MaxPlayers = 4;`
+- [ ] Public fields are PascalCase → `public int MaxHealth;`
 - [ ] Public properties are PascalCase, no prefix → `public int Health { get; private set; }`
 - [ ] Methods are PascalCase → `private void UpdateHealth()`
 - [ ] Interfaces are prefixed with `I` → `IHealthProvider`
+- [ ] Members ordered fields → constructors → properties → events → methods; within each group access level public → internal → protected → private, static before instance
+- [ ] New files opt into `#nullable enable` and annotate nullable members/parameters with `?`
+- [ ] `var` used for local variables when the type is apparent; fields, properties, and method signatures use explicit types
+- [ ] Task-returning methods use the `Async` suffix; no `async void` outside event handlers
 - [ ] Enums and enum values are PascalCase
 - [ ] Local variables and parameters are camelCase, no prefix
 
@@ -98,8 +102,8 @@ After all issues, output a **Summary** with total counts per severity and an ove
 
 ### Caching
 
-- [ ] Component references cached in a field: `m_rb = GetComponent<Rigidbody>()`
-- [ ] `Camera.main` not called in Update — cache it (`m_mainCamera = Camera.main`)
+- [ ] Component references cached in a field: `_rb = GetComponent<Rigidbody>()`
+- [ ] `Camera.main` not called in Update — cache it (`_mainCamera = Camera.main`)
 - [ ] `transform` access in tight loops cached to a local variable
 - [ ] `WaitForSeconds` instances cached as static or instance fields
 
@@ -168,9 +172,7 @@ Flag any occurrence of:
 - [ ] File named in **PascalCase** — `MainMenu.uxml`, not `main-menu.uxml`
 - [ ] Elements use `name` for unique C# query targets (kebab-case)
 - [ ] Elements use `class` for reusable BEM styles
-- [ ] `binding-path` values exactly match the C# property name (case-sensitive)
-- [ ] `[CreateProperty]` attribute present on all bound C# properties
-- [ ] `data-source-type` attribute set on binding root element when using runtime data binding
+- [ ] No Unity 6 runtime data binding (`binding-path`, `data-source-type`, `[CreateProperty]`, `VisualElement.dataSource`) — on 2022.3 the View refreshes elements manually in `Refresh()`
 
 ### When naming issues are found in .uss / .uxml
 
@@ -193,8 +195,8 @@ When reviewing a **single file**:
 
 | # | Severity | Category | Location | Issue | Fix |
 |---|----------|----------|----------|-------|-----|
-| 1 | Critical  | Naming   | PlayerController.Update | Field `health` missing `m_` prefix | Rename to `m_health` |
-| 2 | Warning   | Allocation | EnemyAI.Update | `GetComponent<Renderer>()` called each frame | Cache in `Awake`: `m_renderer = GetComponent<Renderer>()` |
+| 1 | Critical  | Naming   | PlayerController.Update | Field `health` missing `_` prefix | Rename to `_health` |
+| 2 | Warning   | Allocation | EnemyAI.Update | `GetComponent<Renderer>()` called each frame | Cache in `Awake`: `_renderer = GetComponent<Renderer>()` |
 | 3 | Warning   | BEM Naming | MainMenu.uxml | `name="navbarMenu"` uses camelCase | Change to `name="navbar-menu"` |
 | 4 | Critical  | USS Property | MainMenu.uss | `color: #FF0000` — hex not supported | Change to `color: rgb(255, 0, 0)` |
 

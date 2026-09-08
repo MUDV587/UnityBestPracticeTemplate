@@ -6,7 +6,7 @@ using UnityEngine;
 namespace Unity.BestPractices.Editor
 {
     /// <summary>
-    /// Applies recommended Unity 6 project settings — either all at once or individually.
+    /// Applies recommended project settings — either all at once or individually.
     /// Open the dedicated panel via <b>Window → Best Practices → Configure Project Settings</b>,
     /// or call <see cref="ApplySettings"/> to apply everything non-interactively.
     /// </summary>
@@ -47,8 +47,11 @@ namespace Unity.BestPractices.Editor
         public static bool IsCreateObjectsAtOriginConfigured =>
             EditorPrefs.GetBool("Scene/CreateObjectsAtWorldOrigin", false);
 
+#if UNITY_6000_0_OR_NEWER
+        // The New Hierarchy window is a Unity 6 feature; the pref does not exist on 2022.3.
         public static bool IsNewHierarchyWindowConfigured =>
             EditorPrefs.GetBool("Hierarchy/UseNewHierarchyWindow", false);
+#endif
 
         const string k_AssetManagerImportLocationKey = "System.String::AM4U.defaultImportLocation";
         const string k_AssetManagerSubfolderKey = "System.Boolean::AM4U.isSubfolderCreationEnabled";
@@ -122,11 +125,13 @@ namespace Unity.BestPractices.Editor
             Debug.Log("[Best Practices] Create Objects at Origin enabled. New GameObjects will spawn at (0,0,0).");
         }
 
+#if UNITY_6000_0_OR_NEWER
         public static void ApplyNewHierarchyWindow()
         {
             EditorPrefs.SetBool("Hierarchy/UseNewHierarchyWindow", true);
             Debug.Log("[Best Practices] New Hierarchy window enabled. Reopen the Hierarchy window to apply.");
         }
+#endif
 
         public static void ApplyAssetManagerImportLocation()
         {
@@ -158,11 +163,13 @@ namespace Unity.BestPractices.Editor
             Debug.Log("[Best Practices] Create Objects at Origin disabled. New GameObjects will spawn at the Scene View camera position.");
         }
 
+#if UNITY_6000_0_OR_NEWER
         public static void DisableNewHierarchyWindow()
         {
             EditorPrefs.SetBool("Hierarchy/UseNewHierarchyWindow", false);
             Debug.Log("[Best Practices] New Hierarchy window disabled. Reopen the Hierarchy window to apply.");
         }
+#endif
 
         public static void ResetAssetManagerImportLocation()
         {
@@ -183,7 +190,9 @@ namespace Unity.BestPractices.Editor
             ApplyInputSystem();
             ApplyIncrementalGC();
             ApplyCreateObjectsAtOrigin();
+#if UNITY_6000_0_OR_NEWER
             ApplyNewHierarchyWindow();
+#endif
             ApplyAssetManagerImportLocation();
             Debug.Log("[Best Practices] All project settings configured. Review them in Edit > Project Settings.");
         }

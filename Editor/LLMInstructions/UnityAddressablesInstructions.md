@@ -18,9 +18,9 @@ Table of contents:
 
 # Unity Version-Specific Instructions
 
-- ℹ️ This project uses Unity 6.3 and Addressables 2.x. API surface is stable but prefer the async/await pattern using `AsyncOperationHandle.Task` over `WaitForCompletion()`.
+- ℹ️ This project uses Unity 2022.3 LTS and Addressables 1.21.x. API surface is stable.
 - ℹ️ `Addressables.LoadAssetAsync<T>()` returns an `AsyncOperationHandle<T>` — always store the handle in order to release it later.
-- ℹ️ Unity 6 allows `await handle.Task` directly, making Awaitable-style patterns cleaner than coroutines.
+- ℹ️ `await handle.Task` works on Unity 2022.3 (it awaits the handle's .NET `Task`, not Unity's `Awaitable`) — prefer it over blocking `WaitForCompletion()`.
 - ℹ️ `WaitForCompletion()` is synchronous and blocks the main thread — avoid it in production code.
 
 # Core Concepts
@@ -51,31 +51,31 @@ public static class AddressKeys
 ```csharp
 public class WeaponLoader : MonoBehaviour
 {
-    [SerializeField] private AssetReferenceGameObject m_WeaponReference;
+    [SerializeField] private AssetReferenceGameObject _weaponReference;
 
-    private AsyncOperationHandle<GameObject> m_LoadHandle;
+    private AsyncOperationHandle<GameObject> _loadHandle;
 
     private async void Start()
     {
-        m_LoadHandle = Addressables.LoadAssetAsync<GameObject>(m_WeaponReference);
-        await m_LoadHandle.Task;
+        _loadHandle = Addressables.LoadAssetAsync<GameObject>(_weaponReference);
+        await _loadHandle.Task;
 
-        if (m_LoadHandle.Status == AsyncOperationStatus.Succeeded)
+        if (_loadHandle.Status == AsyncOperationStatus.Succeeded)
         {
-            GameObject weaponPrefab = m_LoadHandle.Result;
+            GameObject weaponPrefab = _loadHandle.Result;
             Instantiate(weaponPrefab, transform);
         }
         else
         {
-            Debug.LogError($"[WeaponLoader] Failed to load weapon: {m_LoadHandle.OperationException}");
+            Debug.LogError($"[WeaponLoader] Failed to load weapon: {_loadHandle.OperationException}");
         }
     }
 
     private void OnDestroy()
     {
         // Always release the handle when done
-        if (m_LoadHandle.IsValid())
-            Addressables.Release(m_LoadHandle);
+        if (_loadHandle.IsValid())
+            Addressables.Release(_loadHandle);
     }
 }
 ```
@@ -91,53 +91,53 @@ public class WeaponLoader : MonoBehaviour
 // Pattern A: Addressables manages the instance lifecycle
 public class EnemySpawner : MonoBehaviour
 {
-    [SerializeField] private AssetReferenceGameObject m_EnemyReference;
+    [SerializeField] private AssetReferenceGameObject _enemyReference;
 
-    private readonly List<GameObject> m_SpawnedEnemies = new List<GameObject>();
+    private readonly List<GameObject> _spawnedEnemies = new List<GameObject>();
 
     public async void SpawnEnemy(Vector3 position)
     {
-        var handle = Addressables.InstantiateAsync(m_EnemyReference, position, Quaternion.identity);
+        var handle = Addressables.InstantiateAsync(_enemyReference, position, Quaternion.identity);
         await handle.Task;
 
         if (handle.Status == AsyncOperationStatus.Succeeded)
-            m_SpawnedEnemies.Add(handle.Result);
+            _spawnedEnemies.Add(handle.Result);
     }
 
     private void OnDestroy()
     {
-        foreach (var enemy in m_SpawnedEnemies)
+        foreach (var enemy in _spawnedEnemies)
         {
             if (enemy != null)
                 Addressables.ReleaseInstance(enemy); // NOT Destroy(enemy)
         }
-        m_SpawnedEnemies.Clear();
+        _spawnedEnemies.Clear();
     }
 }
 
 // Pattern B: Load once, instantiate many (preferred for pooling)
 public class BulletPool : MonoBehaviour
 {
-    [SerializeField] private AssetReferenceGameObject m_BulletReference;
+    [SerializeField] private AssetReferenceGameObject _bulletReference;
 
-    private AsyncOperationHandle<GameObject> m_BulletHandle;
-    private GameObject m_BulletPrefab;
+    private AsyncOperationHandle<GameObject> _bulletHandle;
+    private GameObject _bulletPrefab;
 
     private async void Awake()
     {
-        m_BulletHandle = Addressables.LoadAssetAsync<GameObject>(m_BulletReference);
-        m_BulletPrefab = await m_BulletHandle.Task;
+        _bulletHandle = Addressables.LoadAssetAsync<GameObject>(_bulletReference);
+        _bulletPrefab = await _bulletHandle.Task;
     }
 
     public GameObject SpawnBullet(Vector3 position)
     {
-        return Instantiate(m_BulletPrefab, position, Quaternion.identity);
+        return Instantiate(_bulletPrefab, position, Quaternion.identity);
     }
 
     private void OnDestroy()
     {
-        if (m_BulletHandle.IsValid())
-            Addressables.Release(m_BulletHandle);
+        if (_bulletHandle.IsValid())
+            Addressables.Release(_bulletHandle);
     }
 }
 ```
@@ -175,21 +175,21 @@ private async void LoadAndForget()
 // CORRECT — store the handle and release it on cleanup
 public class PlayerSpawner : MonoBehaviour
 {
-    private AsyncOperationHandle<GameObject> m_PlayerHandle;
+    private AsyncOperationHandle<GameObject> _playerHandle;
 
     private async void Start()
     {
-        m_PlayerHandle = Addressables.LoadAssetAsync<GameObject>("Prefabs/Player");
-        await m_PlayerHandle.Task;
+        _playerHandle = Addressables.LoadAssetAsync<GameObject>("Prefabs/Player");
+        await _playerHandle.Task;
 
-        if (m_PlayerHandle.Status == AsyncOperationStatus.Succeeded)
-            Instantiate(m_PlayerHandle.Result);
+        if (_playerHandle.Status == AsyncOperationStatus.Succeeded)
+            Instantiate(_playerHandle.Result);
     }
 
     private void OnDestroy()
     {
-        if (m_PlayerHandle.IsValid())
-            Addressables.Release(m_PlayerHandle);
+        if (_playerHandle.IsValid())
+            Addressables.Release(_playerHandle);
     }
 }
 ```
@@ -203,31 +203,31 @@ public class PlayerSpawner : MonoBehaviour
 ```csharp
 public class IconLibrary : MonoBehaviour
 {
-    private AsyncOperationHandle<IList<Sprite>> m_IconsHandle;
-    private readonly Dictionary<string, Sprite> m_Icons = new Dictionary<string, Sprite>();
+    private AsyncOperationHandle<IList<Sprite>> _iconsHandle;
+    private readonly Dictionary<string, Sprite> _icons = new Dictionary<string, Sprite>();
 
     private async void Awake()
     {
-        m_IconsHandle = Addressables.LoadAssetsAsync<Sprite>("ui-icons", OnIconLoaded);
-        await m_IconsHandle.Task;
+        _iconsHandle = Addressables.LoadAssetsAsync<Sprite>("ui-icons", OnIconLoaded);
+        await _iconsHandle.Task;
 
-        Debug.Log($"[IconLibrary] Loaded {m_Icons.Count} icons.");
+        Debug.Log($"[IconLibrary] Loaded {_icons.Count} icons.");
     }
 
     private void OnIconLoaded(Sprite sprite)
     {
-        m_Icons[sprite.name] = sprite;
+        _icons[sprite.name] = sprite;
     }
 
     public Sprite GetIcon(string iconName)
     {
-        return m_Icons.TryGetValue(iconName, out var sprite) ? sprite : null;
+        return _icons.TryGetValue(iconName, out var sprite) ? sprite : null;
     }
 
     private void OnDestroy()
     {
-        if (m_IconsHandle.IsValid())
-            Addressables.Release(m_IconsHandle);
+        if (_iconsHandle.IsValid())
+            Addressables.Release(_iconsHandle);
     }
 }
 ```
@@ -269,7 +269,7 @@ public class ContentDownloader : MonoBehaviour
         {
             float progress = downloadHandle.GetDownloadStatus().Percent;
             Debug.Log($"[Download] {progress:P0}");
-            await Awaitable.NextFrameAsync();
+            await Task.Yield();
         }
 
         Addressables.Release(downloadHandle);

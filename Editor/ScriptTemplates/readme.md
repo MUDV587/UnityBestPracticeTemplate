@@ -1,4 +1,4 @@
-# Custom Script Templates: Creating Your Own in Unity 6
+# Custom Script Templates: Creating Your Own in Unity 2022.3
 
 When you create a new C# script in Unity, the Editor generates a file from a built-in template.
 Customizing these templates lets you enforce your team's code style from the first line,
@@ -14,7 +14,7 @@ That approach still works but has real drawbacks: templates are overwritten on e
 require elevated permissions to edit, and aren't shared with your team through version control.
 
 Instead you can use **project-level templates** via an `Assets/ScriptTemplates/` folder.
-This is the recommended approach for Unity 6 and later.
+This is the recommended approach for Unity 2022.3 and later.
 Templates placed here override the built-in defaults, travel with your repository, and require no special permissions.
 
 ## Step 1: Create the ScriptTemplates folder
@@ -60,7 +60,7 @@ This creates the menu item: **Create > Scripting > MonoBehaviour Script** with a
 
 ### Built-in templates you can override
 
-These are the default template file names from Unity 6.3. Use the same names to replace them:
+These are the default template file names from Unity 2022.3. Use the same names to replace them:
 
 | File Name | Menu Item |
 |-----------|-----------|
@@ -234,8 +234,8 @@ After adding or modifying templates, you must **close and reopen the Unity Edito
 
 For more details on the Unity Editor and project configuration:
 
-- [Unity 6 Manual: Project Settings](https://docs.unity3d.com/6000.3/Documentation/Manual/comp-ManagerGroup.html)
-- [Unity 6 Manual: Creating and Using Scripts](https://docs.unity3d.com/6000.3/Documentation/Manual/creating-and-using-scripts.html)
+- [Unity 2022.3 Manual: Project Settings](https://docs.unity3d.com/2022.3/Documentation/Manual/comp-ManagerGroup.html)
+- [Unity 2022.3 Manual: Creating and Using Scripts](https://docs.unity3d.com/2022.3/Documentation/Manual/creating-and-using-scripts.html)
 
 ## UI Toolkit View Template
   Features:

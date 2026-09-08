@@ -18,7 +18,7 @@ Table of contents:
 
 # Unity Version-Specific Instructions
 
-- ℹ️ This project uses Unity 6.3 and the **Localization** package 1.5+. Install it via Package Manager.
+- ℹ️ This project uses Unity 2022.3 LTS and the **Localization** package 1.5+. Install it via Package Manager.
 - ℹ️ Unity Localization 1.5 supports `LocalizedString.GetLocalizedStringAsync()` returning an `AsyncOperationHandle<string>` — prefer this over the synchronous `GetLocalizedString()` which blocks.
 - ℹ️ Smart Strings use the `SmartFormat` library — see the package documentation for the full formatter list.
 - ℹ️ `LocalizationSettings` is the central singleton — do not create your own locale management layer on top of it.
@@ -41,23 +41,23 @@ Table of contents:
 ```csharp
 public class UILabel : MonoBehaviour
 {
-    [SerializeField] private LocalizedString m_LabelText;
-    [SerializeField] private TMP_Text m_TextField;
+    [SerializeField] private LocalizedString _labelText;
+    [SerializeField] private TMP_Text _textField;
 
     private void OnEnable()
     {
         // StringChanged fires immediately with the current locale value, then again on locale change
-        m_LabelText.StringChanged += HandleStringChanged;
+        _labelText.StringChanged += HandleStringChanged;
     }
 
     private void OnDisable()
     {
-        m_LabelText.StringChanged -= HandleStringChanged;
+        _labelText.StringChanged -= HandleStringChanged;
     }
 
     private void HandleStringChanged(string localizedValue)
     {
-        m_TextField.text = localizedValue;
+        _textField.text = localizedValue;
     }
 }
 ```
@@ -93,7 +93,7 @@ public static class UIStringKeys
 ```csharp
 public class ToastNotification : MonoBehaviour
 {
-    [SerializeField] private TMP_Text m_MessageText;
+    [SerializeField] private TMP_Text _messageText;
 
     public async void ShowMessage(string tableKey)
     {
@@ -102,7 +102,7 @@ public class ToastNotification : MonoBehaviour
         await handle.Task;
 
         if (handle.Status == AsyncOperationStatus.Succeeded)
-            m_MessageText.text = handle.Result;
+            _messageText.text = handle.Result;
         else
             Debug.LogError($"[Localization] Failed to load key: {tableKey}");
     }
@@ -123,38 +123,38 @@ public class ToastNotification : MonoBehaviour
 
 public class ScoreDisplay : MonoBehaviour
 {
-    [SerializeField] private LocalizedString m_ScoreFormat;
-    [SerializeField] private TMP_Text m_ScoreText;
+    [SerializeField] private LocalizedString _scoreFormat;
+    [SerializeField] private TMP_Text _scoreText;
 
-    private int m_CurrentScore;
+    private int _currentScore;
 
     private void OnEnable()
     {
-        m_ScoreFormat.StringChanged += HandleStringChanged;
+        _scoreFormat.StringChanged += HandleStringChanged;
     }
 
     private void OnDisable()
     {
-        m_ScoreFormat.StringChanged -= HandleStringChanged;
+        _scoreFormat.StringChanged -= HandleStringChanged;
     }
 
     public void SetScore(int score)
     {
-        m_CurrentScore = score;
+        _currentScore = score;
 
         // Pass a named argument matching the {score} placeholder
-        m_ScoreFormat.Arguments = new object[]
+        _scoreFormat.Arguments = new object[]
         {
-            new { score = m_CurrentScore }
+            new { score = _currentScore }
         };
 
         // Refresh — StringChanged will fire with the formatted result
-        m_ScoreFormat.RefreshString();
+        _scoreFormat.RefreshString();
     }
 
     private void HandleStringChanged(string localizedValue)
     {
-        m_ScoreText.text = localizedValue;
+        _scoreText.text = localizedValue;
     }
 }
 ```
@@ -172,23 +172,23 @@ public class ScoreDisplay : MonoBehaviour
 
 public class ItemCountLabel : MonoBehaviour
 {
-    [SerializeField] private LocalizedString m_ItemCountString;
-    [SerializeField] private TMP_Text m_Label;
+    [SerializeField] private LocalizedString _itemCountString;
+    [SerializeField] private TMP_Text _label;
 
     private void OnEnable()
     {
-        m_ItemCountString.StringChanged += value => m_Label.text = value;
+        _itemCountString.StringChanged += value => _label.text = value;
     }
 
     private void OnDisable()
     {
-        m_ItemCountString.StringChanged -= value => m_Label.text = value;
+        _itemCountString.StringChanged -= value => _label.text = value;
     }
 
     public void UpdateCount(int count)
     {
-        m_ItemCountString.Arguments = new object[] { new { count } };
-        m_ItemCountString.RefreshString();
+        _itemCountString.Arguments = new object[] { new { count } };
+        _itemCountString.RefreshString();
     }
 }
 ```
@@ -250,22 +250,22 @@ public class LocaleSwitcher : MonoBehaviour
 // Localizing a sprite (e.g. flag icons, locale-specific artwork)
 public class LocalizedSpriteDisplay : MonoBehaviour
 {
-    [SerializeField] private LocalizedSprite m_LocalizedSprite;
-    [SerializeField] private Image m_Image;
+    [SerializeField] private LocalizedSprite _localizedSprite;
+    [SerializeField] private Image _image;
 
     private void OnEnable()
     {
-        m_LocalizedSprite.AssetChanged += HandleSpriteChanged;
+        _localizedSprite.AssetChanged += HandleSpriteChanged;
     }
 
     private void OnDisable()
     {
-        m_LocalizedSprite.AssetChanged -= HandleSpriteChanged;
+        _localizedSprite.AssetChanged -= HandleSpriteChanged;
     }
 
     private void HandleSpriteChanged(Sprite sprite)
     {
-        m_Image.sprite = sprite;
+        _image.sprite = sprite;
     }
 }
 ```
@@ -290,22 +290,22 @@ public class BadMenuButton : MonoBehaviour
 // PREFER
 public class GoodMenuButton : MonoBehaviour
 {
-    [SerializeField] private LocalizedString m_ButtonLabel;
-    private TMP_Text m_Text;
+    [SerializeField] private LocalizedString _buttonLabel;
+    private TMP_Text _text;
 
     private void Awake()
     {
-        m_Text = GetComponent<TMP_Text>();
+        _text = GetComponent<TMP_Text>();
     }
 
     private void OnEnable()
     {
-        m_ButtonLabel.StringChanged += value => m_Text.text = value;
+        _buttonLabel.StringChanged += value => _text.text = value;
     }
 
     private void OnDisable()
     {
-        m_ButtonLabel.StringChanged -= value => m_Text.text = value;
+        _buttonLabel.StringChanged -= value => _text.text = value;
     }
 }
 ```

@@ -4,7 +4,7 @@ using UnityEngine;
 namespace Unity.BestPractices.Editor
 {
     /// <summary>
-    /// Dedicated panel for applying recommended Unity 6 project settings one step at a time.
+    /// Dedicated panel for applying recommended project settings one step at a time.
     /// Each row shows whether the setting is already configured and offers an individual Run button.
     /// Open via <b>Window → Best Practices → Configure Project Settings</b> or from the Project Dashboard.
     /// </summary>
@@ -38,7 +38,7 @@ namespace Unity.BestPractices.Editor
             GUILayout.Label("PROJECT SETTINGS", EditorStyles.boldLabel);
             GUILayout.Space(2);
             GUILayout.Label(
-                "Apply recommended Unity 6 settings individually or all at once. " +
+                "Apply recommended project settings individually or all at once. " +
                 "Green \"Configured\" means the setting already matches the recommendation.",
                 EditorStyles.wordWrappedLabel);
             EditorGUILayout.EndVertical();

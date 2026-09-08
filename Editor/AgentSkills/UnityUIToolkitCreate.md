@@ -1,6 +1,6 @@
 # Unity UI Toolkit — Create UI
 
-You are creating Unity UI Toolkit UI for **Unity 6.3 exclusively**. Follow all conventions in `UnityUIToolkitInstructions.md`. Never use legacy UGUI (Canvas/GameObject-based UI).
+You are creating Unity UI Toolkit UI for **Unity 2022.3 LTS**. Follow all conventions in `UnityUIToolkitInstructions.md`. Never use legacy UGUI (Canvas/GameObject-based UI).
 
 ---
 
@@ -29,7 +29,7 @@ State which files you are creating and where they should go (e.g., `Assets/UI/UX
 - Element `name` attributes: **kebab-case**, unique within their block — used for C# queries
 - Element `class` attributes: **BEM** (`block__element--modifier`)
 - Files: **PascalCase** (`MainMenu.uxml`, `InventoryPanel.uxml`)
-- Data binding: use `binding-path` and `data-source-type` when a data source exists
+- **No runtime data binding** (`binding-path` / `data-source-type`) — that is Unity 6-only. The C# View populates elements manually in a `Refresh()` method
 
 ### USS
 
@@ -44,10 +44,9 @@ State which files you are creating and where they should go (e.g., `Assets/UI/UX
 
 ### C# naming (follows `UnityCodeStyleInstructions.md`)
 
-- Private instance fields: `m_` prefix
-- Static fields: `s_` prefix
-- Constants: `k_` prefix
-- Selector string constants: `private const string k_myElement = "my-element";`
+- Private/protected instance and static fields: `_camelCase`
+- Constants and static readonly: PascalCase
+- Selector string constants: `private const string MyElement = "my-element";`
 - Query all elements in `OnEnable`, not `Awake` or `Update`
 - Unsubscribe all events in `OnDisable`
 - Use `EventRegistry` for bulk cleanup when registering multiple callbacks
@@ -55,9 +54,9 @@ State which files you are creating and where they should go (e.g., `Assets/UI/UX
 ### Architecture
 
 - **View** (`*View.cs`): inherits `UITKBaseClass`, queries elements, subscribes to events, no business logic
-- **Model** (`*SO.cs` or plain class): implements `INotifyBindablePropertyChanged` + `[CreateProperty]` for reactive binding
+- **Model** (`*SO.cs` or plain class): plain data + a `Changed` event (or an explicit `Refresh()` call) so the View can update manually — no runtime data binding on 2022.3
 - **Presenter** (`*Presenter.cs` or `*Controller.cs`): modifies the model, contains game logic
-- Custom elements: use `[UxmlElement]` / `[UxmlAttribute]` — never `UxmlFactory`/`UxmlTraits`
+- Custom elements: use `UxmlFactory` / `UxmlTraits` — never `[UxmlElement]` / `[UxmlAttribute]` (Unity 6-only)
 
 ### Show/Hide
 
@@ -77,12 +76,12 @@ panel.pickingMode  = show ? PickingMode.Position : PickingMode.Ignore;
 - [ ] `name` attributes are kebab-case
 - [ ] `class` attributes follow BEM
 - [ ] USS file is referenced in UXML via `<Style src="..." />`
-- [ ] All C# field names have the correct prefix (`m_`, `s_`, `k_`)
+- [ ] All C# field names follow the naming convention (`_camelCase` for private/protected, PascalCase for constants and public fields)
 - [ ] Element queries are in `OnEnable`
 - [ ] Events are unsubscribed in `OnDisable`
-- [ ] No `UxmlFactory` / `UxmlTraits` (Unity 6 deprecated)
+- [ ] Custom elements use `UxmlFactory` / `UxmlTraits` (not Unity 6 `[UxmlElement]`)
 - [ ] No `SerializedObject.Bind()` for runtime UI
-- [ ] Reactive model implements `INotifyBindablePropertyChanged` + `[CreateProperty]`
+- [ ] No Unity 6 runtime data binding (`binding-path`, `data-source-type`, `[CreateProperty]`) — View refreshes elements manually
 - [ ] Any panel `ShowPanel()` sets both `display` and `pickingMode`
 
 ---
@@ -130,4 +129,4 @@ Then describe the UI you need: `Create a settings panel with volume slider, grap
 
 **Any chat interface:**
 Reference `UnityUIToolkitInstructions.md` and paste this prompt:
-> "Create Unity UI Toolkit UI (UXML + USS + C# View) for [description]. Follow Unity 6.3 conventions: BEM class names, rgb() colours only, no gap property, OnEnable queries, OnDisable cleanup."
+> "Create Unity UI Toolkit UI (UXML + USS + C# View) for [description]. Follow Unity 2022.3 conventions: BEM class names, rgb() colours only, no gap property, OnEnable queries, OnDisable cleanup, manual Refresh() for data display."
