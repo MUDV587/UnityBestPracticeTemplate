@@ -225,7 +225,8 @@ namespace UnityBestPractices.Editor.Dashboard
                         "Files are copied to .github/instructions/ with an .instructions.md " +
                         "suffix. This is the standard location recognised by GitHub Copilot and " +
                         "many other editors. Cursor and Claude Code can also be pointed at these " +
-                        "files via their own config.",
+                        "files via their own config. In OpenCode, list them in opencode.json " +
+                        "(\"instructions\") or reference them from AGENTS.md.",
                         "WHAT EACH FILE COVERS\n" +
                         "Code Style       — naming rules, field prefixes, Allman braces\n" +
                         "Performance      — allocation avoidance, caching, hot-path patterns\n" +
@@ -242,7 +243,7 @@ namespace UnityBestPractices.Editor.Dashboard
                     });
             }
             EditorGUILayout.EndHorizontal();
-            GUILayout.Label("Markdown files that give AI assistants context about your project's coding standards and Unity conventions. Copied to .github/instructions/ so GitHub Copilot, Cursor, and other editors pick them up automatically.", EditorStyles.wordWrappedMiniLabel);
+            GUILayout.Label("Markdown files that give AI assistants context about your project's coding standards and Unity conventions. Copied to .github/instructions/ so GitHub Copilot, Cursor, and other editors pick them up automatically; OpenCode picks them up via opencode.json instructions.", EditorStyles.wordWrappedMiniLabel);
 
             if (m_showLLMFiles && m_data.LLMInstructionFiles != null)
             {
@@ -332,21 +333,24 @@ namespace UnityBestPractices.Editor.Dashboard
                         "so you can invoke it with a single command instead of typing the same " +
                         "prompt from scratch every time.",
                         "HOW THEY ARE INSTALLED\n" +
-                        "Skills are copied to two locations:\n\n" +
+                        "Skills are copied to three locations:\n\n" +
                         ".github/prompts/     — GitHub Copilot reusable prompts (Chat → #file)\n" +
-                        ".claude/commands/    — Claude Code slash commands (/project:skill-name)",
+                        ".claude/commands/    — Claude Code slash commands (/project:skill-name)\n" +
+                        ".opencode/skills/    — OpenCode skills (<name>/SKILL.md, auto-discovered)",
                         "HOW TO USE THEM\n" +
                         "In GitHub Copilot Chat, reference a prompt file with #file or use the " +
                         "reusable prompts picker.\n\n" +
                         "In Claude Code, type /project:skill-name in the terminal to invoke the skill " +
-                        "directly. Claude expands the template and executes the workflow.",
+                        "directly. Claude expands the template and executes the workflow.\n\n" +
+                        "In OpenCode, skills under .opencode/skills/ are discovered automatically and " +
+                        "can be loaded on demand via the skill tool (e.g. unity-code-review).",
                         "Use 'Add' to install individual skills or 'Copy to Project' to install " +
                         "all at once. 'Update' overwrites an installed skill with the latest " +
                         "version from the package."
                     });
             }
             EditorGUILayout.EndHorizontal();
-            GUILayout.Label("Reusable prompt templates that define specialized AI workflows for your project. Copied to .github/prompts/ (GitHub Copilot reusable prompts) and .claude/commands/ (Claude Code slash commands).", EditorStyles.wordWrappedMiniLabel);
+            GUILayout.Label("Reusable prompt templates that define specialized AI workflows for your project. Copied to .github/prompts/ (GitHub Copilot reusable prompts), .claude/commands/ (Claude Code slash commands) and .opencode/skills/ (OpenCode skills).", EditorStyles.wordWrappedMiniLabel);
 
             if (m_showSkills && m_data.AgentSkillFiles != null)
             {
@@ -385,7 +389,7 @@ namespace UnityBestPractices.Editor.Dashboard
                         if (GUILayout.Button(new GUIContent("View", "View this skill file from the package"), GUILayout.Width(50)))
                             InternalEditorUtility.OpenFileAtLineExternal(fullPath, 1, 0);
 
-                        if (GUILayout.Button(new GUIContent("Add", "Copy to .github/prompts/ (Copilot) and .claude/commands/ (Claude Code)"), GUILayout.Width(40)))
+                        if (GUILayout.Button(new GUIContent("Add", "Copy to .github/prompts/ (Copilot), .claude/commands/ (Claude Code) and .opencode/skills/ (OpenCode)"), GUILayout.Width(40)))
                             CopyAIFilesToProject.CopySingleAgentSkill(fullPath, projectRoot);
                     }
 
@@ -399,7 +403,7 @@ namespace UnityBestPractices.Editor.Dashboard
 
             DrawToolCard(
                 "Copy All Agent Skills",
-                "Copies all agent skill files to .github/prompts/ (Copilot reusable prompts) and .claude/commands/ (Claude Code slash commands).",
+                "Copies all agent skill files to .github/prompts/ (Copilot reusable prompts), .claude/commands/ (Claude Code slash commands) and .opencode/skills/ (OpenCode skills).",
                 false, "",
                 "Copy to Project", CopyAIFilesToProject.ExecuteAgentSkillsOnly, 110, showBadge: false);
 

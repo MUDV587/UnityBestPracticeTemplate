@@ -1,3 +1,8 @@
+---
+name: unity-uitoolkit-create
+description: Build Unity UI Toolkit screens — .uxml, .uss, and C# View/Model/Presenter wiring — following the project's UI Toolkit conventions.
+---
+
 # Unity UI Toolkit — Create UI
 
 You are creating Unity UI Toolkit UI for **Unity 2022.3 LTS**. Follow all conventions in `UnityUIToolkitInstructions.md`. Never use legacy UGUI (Canvas/GameObject-based UI).

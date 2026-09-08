@@ -53,6 +53,33 @@ Create `.gemini/GEMINI.md` in your project root and reference or copy the instru
 
 Create `AGENTS.md` in your project root. Paste or reference the relevant instruction file contents.
 
+## OpenCode
+
+OpenCode reads project rules from an `AGENTS.md` in your project root (it also falls back to `CLAUDE.md` when no `AGENTS.md` exists). Unlike Claude Code, OpenCode does **not** automatically parse `@file` references inside `AGENTS.md` — the recommended way to wire up the instruction files is the `instructions` field in `opencode.json`:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": [
+    ".github/instructions/*.instructions.md",
+    ".github/copilot-instructions.md"
+  ]
+}
+```
+
+Run **Tools → Unity Project Configurator → AI → Copy AI Files to Project** first — it writes the individual instruction files to `.github/instructions/` and the consolidated file to `.github/copilot-instructions.md`. Alternatively, put explicit "read this file when relevant" instructions into `AGENTS.md`.
+
+### OpenCode skills (Agent Skills)
+
+Agent skills are also written to `.opencode/skills/<name>/SKILL.md` (with `name`/`description` frontmatter). OpenCode discovers these automatically and loads them on demand via its skill tool:
+
+```
+unity-code-review
+unity-uitoolkit-create
+```
+
+> **Note:** the `.github/prompts/` and `.claude/commands/` copies serve GitHub Copilot and Claude Code respectively; OpenCode reads `.opencode/skills/` (and `.claude/skills/`, `.agents/skills/`) — a file in `.claude/commands/` alone is **not** exposed as an OpenCode skill.
+
 ## Recommended file selection per task
 
 | You're working on... | Use these files |

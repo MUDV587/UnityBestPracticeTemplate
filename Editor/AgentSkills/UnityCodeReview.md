@@ -1,3 +1,8 @@
+---
+name: unity-code-review
+description: Run a structured Unity code review on .cs, .uss, and .uxml files, reporting issues with severity, location, and a suggested fix.
+---
+
 # Unity Code Review
 
 You are performing a structured Unity code review. The input may be:

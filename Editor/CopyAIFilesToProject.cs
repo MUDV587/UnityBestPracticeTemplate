@@ -1,5 +1,6 @@
 using System.IO;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
 
@@ -14,6 +15,7 @@ namespace Unity.BestPractices.Editor
     ///   <item><description><c>Editor/LLMInstructions/*.md</c> → <c>.github/instructions/*.instructions.md</c> (VS Code Copilot workspace instructions)</description></item>
     ///   <item><description><c>Editor/LLMInstructions/copilot-instructions.md</c> → <c>.github/copilot-instructions.md</c> (GitHub Copilot repository instructions)</description></item>
     ///   <item><description><c>Editor/AgentSkills/*.md</c> → <c>.github/prompts/*.prompt.md</c> (Copilot reusable prompts) and <c>.claude/commands/*.md</c> (Claude Code slash commands)</description></item>
+    ///   <item><description><c>Editor/AgentSkills/*.md</c> → <c>.opencode/skills/&lt;name&gt;/SKILL.md</c> (OpenCode native skills — SKILL.md format)</description></item>
     /// </list>
     ///
     /// All destination files are created (or overwritten) without confirmation — re-run safely at any time.
@@ -52,7 +54,7 @@ namespace Unity.BestPractices.Editor
                 $"Copied to project root:\n\n" +
                 $"• {llmCount} LLM Instruction file(s) → .github/instructions/\n" +
                 $"• .github/copilot-instructions.md (consolidated)\n" +
-                $"• {skillCount} AgentSkill file(s) → .github/prompts/ and .claude/commands/",
+                $"• {skillCount} AgentSkill file(s) → .github/prompts/, .claude/commands/ and .opencode/skills/",
                 "OK");
         }
         /// <summary>Copies only LLM instruction files to .github/instructions/ (and .github/copilot-instructions.md).</summary>
@@ -80,7 +82,7 @@ namespace Unity.BestPractices.Editor
             string projectRoot = Path.GetDirectoryName(Application.dataPath);
             int count = CopyAgentSkills(packageRoot, projectRoot);
             AssetDatabase.Refresh();
-            Debug.Log($"[Best Practices] Copied {count} agent skill file(s) to .github/prompts/ and .claude/commands/");
+            Debug.Log($"[Best Practices] Copied {count} agent skill file(s) to .github/prompts/, .claude/commands/ and .opencode/skills/");
         }
         /// <summary>Returns the absolute destination path where the given LLM instruction source would be copied in the project.</summary>
         public static string GetLLMInstructionDestPath(string srcAbsPath, string projectRoot)
@@ -139,23 +141,65 @@ namespace Unity.BestPractices.Editor
             return Path.Combine(projectRoot, ".claude", "commands", baseName + ".md");
         }
 
-        /// <summary>Returns true if both destination copies (.github/prompts/ and .claude/commands/) exist for the given AgentSkill source.</summary>
+        /// <summary>Returns the OpenCode skill folder name for the given AgentSkill source — the
+        /// <c>name:</c> field from its SKILL.md frontmatter (must match the containing directory).
+        /// Falls back to a kebab-cased file name when no frontmatter is present.</summary>
+        public static string GetOpenCodeSkillFolderName(string srcAbsPath)
+        {
+            string name = ReadFrontmatterName(srcAbsPath);
+            if (!string.IsNullOrEmpty(name))
+                return name;
+
+            string baseName = Path.GetFileNameWithoutExtension(Path.GetFileName(srcAbsPath));
+            return Regex.Replace(baseName, "(?<=[a-z0-9])(?=[A-Z])", "-").ToLowerInvariant();
+        }
+
+        /// <summary>Returns the absolute destination path for the .opencode/skills/ copy of the given AgentSkill source.</summary>
+        public static string GetOpenCodeSkillDestPath(string srcAbsPath, string projectRoot)
+        {
+            return Path.Combine(projectRoot, ".opencode", "skills",
+                GetOpenCodeSkillFolderName(srcAbsPath), "SKILL.md");
+        }
+
+        /// <summary>Reads the <c>name:</c> field from the YAML frontmatter of the given file, or null when absent.</summary>
+        private static string ReadFrontmatterName(string path)
+        {
+            string[] lines = File.ReadAllLines(path);
+            if (lines.Length == 0 || !lines[0].Trim().Equals("---"))
+                return null;
+
+            for (int i = 1; i < lines.Length; i++)
+            {
+                string line = lines[i].Trim();
+                if (line == "---")
+                    break;
+                if (line.StartsWith("name:", System.StringComparison.OrdinalIgnoreCase))
+                    return line.Substring("name:".Length).Trim();
+            }
+
+            return null;
+        }
+
+        /// <summary>Returns true if all destination copies (.github/prompts/, .claude/commands/ and .opencode/skills/) exist for the given AgentSkill source.</summary>
         public static bool IsAgentSkillInstalled(string srcAbsPath, string projectRoot)
             => File.Exists(GetAgentSkillPromptDestPath(srcAbsPath, projectRoot))
-            && File.Exists(GetAgentSkillClaudeDestPath(srcAbsPath, projectRoot));
+            && File.Exists(GetAgentSkillClaudeDestPath(srcAbsPath, projectRoot))
+            && File.Exists(GetOpenCodeSkillDestPath(srcAbsPath, projectRoot));
 
-        /// <summary>Returns true if both destination copies exist but either differs from the package source.</summary>
+        /// <summary>Returns true if any destination copy exists but differs from the package source.</summary>
         public static bool AgentSkillIsOutdated(string srcAbsPath, string projectRoot)
         {
             string promptPath = GetAgentSkillPromptDestPath(srcAbsPath, projectRoot);
             string claudePath = GetAgentSkillClaudeDestPath(srcAbsPath, projectRoot);
+            string openCodePath = GetOpenCodeSkillDestPath(srcAbsPath, projectRoot);
             string src = File.ReadAllText(srcAbsPath);
             if (File.Exists(promptPath) && File.ReadAllText(promptPath) != src) return true;
             if (File.Exists(claudePath) && File.ReadAllText(claudePath) != src) return true;
+            if (File.Exists(openCodePath) && File.ReadAllText(openCodePath) != src) return true;
             return false;
         }
 
-        /// <summary>Copies a single AgentSkill file to .github/prompts/ and .claude/commands/.</summary>
+        /// <summary>Copies a single AgentSkill file to .github/prompts/, .claude/commands/ and .opencode/skills/.</summary>
         public static void CopySingleAgentSkill(string srcAbsPath, string projectRoot)
         {
             string baseName = Path.GetFileNameWithoutExtension(Path.GetFileName(srcAbsPath));
@@ -167,6 +211,11 @@ namespace Unity.BestPractices.Editor
             string claudeDir = Path.Combine(projectRoot, ".claude", "commands");
             Directory.CreateDirectory(claudeDir);
             File.Copy(srcAbsPath, Path.Combine(claudeDir, baseName + ".md"), overwrite: true);
+
+            string openCodeDir = Path.Combine(projectRoot, ".opencode", "skills",
+                GetOpenCodeSkillFolderName(srcAbsPath));
+            Directory.CreateDirectory(openCodeDir);
+            File.Copy(srcAbsPath, Path.Combine(openCodeDir, "SKILL.md"), overwrite: true);
         }
 
         private static int CopyLLMInstructions(string packageRoot, string projectRoot)
@@ -214,8 +263,10 @@ namespace Unity.BestPractices.Editor
 
             string promptsDir = Path.Combine(projectRoot, ".github", "prompts");
             string claudeDir = Path.Combine(projectRoot, ".claude", "commands");
+            string openCodeDir = Path.Combine(projectRoot, ".opencode", "skills");
             Directory.CreateDirectory(promptsDir);
             Directory.CreateDirectory(claudeDir);
+            Directory.CreateDirectory(openCodeDir);
 
             string[] sourceFiles = Directory.GetFiles(sourceDir, "*.md");
             int count = 0;
@@ -231,6 +282,11 @@ namespace Unity.BestPractices.Editor
                 // .claude/commands/<Name>.md  (Claude Code slash commands)
                 string claudeDest = Path.Combine(claudeDir, baseName + ".md");
                 File.Copy(srcPath, claudeDest, overwrite: true);
+
+                // .opencode/skills/<name>/SKILL.md  (OpenCode native skills)
+                string skillDestDir = Path.Combine(openCodeDir, GetOpenCodeSkillFolderName(srcPath));
+                Directory.CreateDirectory(skillDestDir);
+                File.Copy(srcPath, Path.Combine(skillDestDir, "SKILL.md"), overwrite: true);
 
                 count++;
             }

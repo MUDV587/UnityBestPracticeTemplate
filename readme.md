@@ -48,7 +48,7 @@ Runs all setup steps in one click: creates the folder structure, applies project
 A living `CodeStyleGuide.cs` reference file that documents naming conventions, formatting rules, and architectural patterns for Unity C# projects. Acts as the single source of truth for the team's coding standards.
 
 ### LLM Instruction Files
-Ready-to-use instruction files for AI coding assistants (Claude Code, GitHub Copilot, Gemini CLI, Codex). Drop them into your project's AI configuration to give your LLM deep context about your Unity codebase.
+Ready-to-use instruction files for AI coding assistants (Claude Code, GitHub Copilot, Gemini CLI, Codex, OpenCode). Drop them into your project's AI configuration to give your LLM deep context about your Unity codebase.
 
 | File | Purpose |
 |---|---|
@@ -71,12 +71,13 @@ Ready-to-use instruction files for AI coding assistants (Claude Code, GitHub Cop
 - **Claude Code** — Copy the files you need and reference them in your `CLAUDE.md`
 - **GitHub Copilot** — Copy into `.github/copilot-instructions.md` or reference via workspace settings
 - **Gemini CLI / Codex** — Add to your IDE's LLM context configuration
+- **OpenCode** — List the copied files in `opencode.json` (`instructions`) or reference them from `AGENTS.md`; full setup in `Documentation/LLMSetup.md`
 
 Run **Tools → Unity Project Configurator → AI → Copy AI Files to Project** to copy all instruction files into your project with one click.
 
 ### Agent Skills
 
-The package includes a VS Code / GitHub Copilot agent skill file (`SKILL.md`) that exposes the instruction files as a named skill for use in agent mode. Once copied into a `.github/` folder that Copilot can discover, the skill can be invoked by name to pull in deep Unity context on demand.
+The package includes reusable agent skill files (`UnityCodeReview`, `UnityUIToolkitCreate`) that encode specialised AI workflows. Run **Tools → Unity Project Configurator → AI → Copy AI Files to Project** to install them as GitHub Copilot reusable prompts (`.github/prompts/`), Claude Code slash commands (`.claude/commands/`), and OpenCode skills (`.opencode/skills/`, SKILL.md format — auto-discovered by OpenCode).
 
 ### Import Presets
 Performance-optimised importer presets that apply consistent, best-practice settings automatically when assets are dropped into the matching folder.
