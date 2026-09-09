@@ -5,6 +5,10 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this package adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.1] - 2026-09-09
+### Changed
+- **C# naming standard aligned with the .NET Runtime coding style** — the coding standard shipped with the package (LLM instructions, agent skills, Quick Reference, and the `.editorconfig` generator) now specifies `s_camelCase` for private/internal static fields (including static readonly), PascalCase for constants at any accessibility (including private/internal) and for public/protected fields, and `_camelCase` for private/internal instance fields, matching the dotnet/docs house style; the `.editorconfig` expresses this with field rules ordered by specificity (const,static > static > none) so every field deterministically matches the most exact rule (a non-public `const` previously raced between overlapping static-field and constant rules depending on IDE tie-breaking); adds `dotnet_diagnostic.IDE1006.severity = warning` so naming violations also surface in `dotnet build`/CI, and a local-constants rule; the package's existing code intentionally keeps its original `m_`/`s_`/`k_` naming rather than being churned
+
 ## [1.5.0] - 2026-09-08
 ### Changed
 - **Ported to Unity 2022.3 LTS** — `package.json` minimum version lowered from `6000.3` to `2022.3`; all LLM instruction files, agent skills, and documentation retargeted to Unity 2022.3 APIs (coroutines instead of `Awaitable`, `UxmlFactory`/`UxmlTraits` instead of `[UxmlElement]`/`[UxmlAttribute]`, editor-only data binding, Netcode for GameObjects 1.x)
@@ -13,7 +17,7 @@ and this package adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **OpenCode support** — agent skills are now also copied to `.opencode/skills/<name>/SKILL.md` (with `name`/`description` frontmatter) so OpenCode discovers them as native skills; `LLMSetup.md`, the readme, and the Dashboard document wiring the LLM instruction files to OpenCode via `opencode.json` `instructions` / `AGENTS.md`
 - **ObjectPooling sample** — replaced `Awaitable.WaitForSecondsAsync` with a coroutine so the sample compiles on 2022.3
 - **Package boilerplate** — default minimum Unity version in the wizard changed from `6000.3` to `2022.3`
-- **C# naming standard** — the coding standard shipped with the package (LLM instructions, agent skills, Quick Reference, and the `.editorconfig` generator) now matches the .NET Runtime team's coding style: `_camelCase` for private/internal instance fields, `s_camelCase` for private/internal static fields, PascalCase for constants at any accessibility (including private/internal) and for public/protected fields; the `.editorconfig` expresses this with four overlapping field rules ordered by specificity (const,static > static > none), so every field matches the most specific rule deterministically; the package's existing code intentionally keeps its original `m_`/`s_`/`k_` naming rather than being churned
+- **C# naming standard** — the coding standard shipped with the package (LLM instructions, agent skills, Quick Reference, and the `.editorconfig` generator) now specifies `_camelCase` for private/protected fields (instance and static) and PascalCase for constants, static readonly, and public fields, matching the .NET mainstream; the package's existing code intentionally keeps its original `m_`/`s_`/`k_` naming rather than being churned (refined to the .NET Runtime house style in 1.5.1)
 
 ### Fixed
 - **Setup Tags and Layers** — restored the missing implementation of the `Setup Tags and Layers` menu item (the file was empty, so the menu item and the wizard step silently did nothing); it now reads a `ProjectTagsAndLayers` config and registers tags, sorting layers, and physics layers into `TagManager.asset`, preserving existing entries

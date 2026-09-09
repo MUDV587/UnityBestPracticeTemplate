@@ -1,6 +1,6 @@
 {
   "name": "com.unity.best-practices",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "displayName": "Unity Project Configurator",
   "unity": "2022.3",
   "description": "A Unity editor toolkit that accelerates project setup, enforces C# coding standards, and supercharges AI-assisted development with curated LLM instruction files and agent skills.",
