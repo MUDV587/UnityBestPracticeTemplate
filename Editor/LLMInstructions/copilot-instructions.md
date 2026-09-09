@@ -117,7 +117,7 @@ Organize classes in the **Unity Script Execution Order**:
 
 1. **Using statements** — System namespaces, then Unity, then project-specific
 2. **Namespace declaration**
-3. **Fields** — `const` → `static readonly` → `static` → instance; `[SerializeField]` first; private/protected in `_camelCase`, constants and static readonly in PascalCase
+3. **Fields** — `const` → `static readonly` → `static` → instance; `[SerializeField]` first; private/internal instance fields in `_camelCase`, private/internal static fields in `s_camelCase`, constants and public/protected fields in PascalCase
 4. **Constructors**
 5. **Properties** — PascalCase, no prefixes
 6. **Events** — Event declarations with `On` prefix for raise methods
@@ -155,8 +155,9 @@ namespace Core.MapGameplay { ... }
 
 ### Fields
 
-- ✅ Use `_camelCase` for private and protected fields (instance and static)
-- ✅ Use PascalCase for constants, static readonly, and public fields
+- ✅ Use `_camelCase` for private and internal instance fields
+- ✅ Use `s_camelCase` for private and internal static fields (including static readonly)
+- ✅ Use PascalCase for constants at any accessibility, and for public/protected fields
 - ✅ Use descriptive names that clearly indicate the field's purpose.
 - ❌ Avoid abbreviations unless they are widely understood (e.g., `UI`, `ID`).
 - ✅ Include units in the name if applicable (e.g., `_speedInMetersPerSecond`).
@@ -165,9 +166,9 @@ namespace Core.MapGameplay { ... }
 - ✅ Expose fields in the Inspector with `[SerializeField]`.
 
 ```csharp
-private int _health;                  // _camelCase for private fields
-private static int _sharedCount;      // _camelCase for static fields
-private const int MaxCount = 100;    // PascalCase for constants
+private int _health;                  // _camelCase for private instance fields
+private static int s_sharedCount;     // s_camelCase for private static fields
+private const int MaxCount = 100;     // PascalCase for constants (any accessibility)
 
 [SerializeField] private int _health; // Serialized private field
 

@@ -39,9 +39,10 @@ After all issues, output a **Summary** with total counts per severity and an ove
 
 ### Naming Conventions
 
-- [ ] Private/protected instance and static fields use `_camelCase` → `private int _health;`
-- [ ] Constants and static readonly values are PascalCase → `private const int MaxPlayers = 4;`
-- [ ] Public fields are PascalCase → `public int MaxHealth;`
+- [ ] Private/internal instance fields use `_camelCase` → `private int _health;`
+- [ ] Private/internal static fields (incl. static readonly) use `s_camelCase` → `private static AudioManager s_instance;`
+- [ ] Constants are PascalCase at any accessibility → `private const int MaxPlayers = 4;`
+- [ ] Public and protected fields are PascalCase → `public int MaxHealth;`
 - [ ] Public properties are PascalCase, no prefix → `public int Health { get; private set; }`
 - [ ] Methods are PascalCase → `private void UpdateHealth()`
 - [ ] Interfaces are prefixed with `I` → `IHealthProvider`

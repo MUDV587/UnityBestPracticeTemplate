@@ -4,9 +4,11 @@
 
 | Style | Use |
 |---|---|
-| `_camelCase` | Private/protected instance and static fields (`private int _health;`) |
-| PascalCase | Constants and static readonly (`private const int MaxHealth = 100;`) |
-| PascalCase | Public fields and properties (`public int MaxHealth`) |
+| `_camelCase` | Private/internal instance fields (`private int _health;`) |
+| `s_camelCase` | Private/internal static fields, including static readonly (`private static int s_instance;`) |
+| PascalCase | Constants at any accessibility (`private const int MaxHealth = 100;`) |
+| PascalCase | Public/protected fields and all properties (`public int MaxHealth`) |
+| PascalCase | Methods, regardless of accessibility (`private void UpdateHealth()`) |
 | camelCase | Parameters, local variables |
 
 ## Class Member Order
@@ -67,7 +69,7 @@ if (condition) {
 - Use `CompareTag("Tag")` not `gameObject.tag == "Tag"` (string alloc)
 - Use `TryGetComponent<T>()` not `GetComponent<T>()` (avoids exception on miss)
 - Prefer `ObjectPool<T>` over Instantiate/Destroy for frequent objects
-- Cache `Animator` param hashes: `private static readonly int SpeedHash = Animator.StringToHash("Speed");`
+- Cache `Animator` param hashes: `private static readonly int s_speedHash = Animator.StringToHash("Speed");`
 - Use `MaterialPropertyBlock` for per-instance shader values (not `material.SetX`)
 
 ## UI Toolkit — UXML/USS BEM Naming

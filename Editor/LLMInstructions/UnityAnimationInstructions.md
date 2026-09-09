@@ -41,13 +41,13 @@ private void Update()
 }
 
 // PREFER — hash computed once at class initialisation
-private static readonly int SpeedHash = Animator.StringToHash("Speed");
-private static readonly int IsGroundedHash = Animator.StringToHash("IsGrounded");
+private static readonly int s_speedHash = Animator.StringToHash("Speed");
+private static readonly int s_isGroundedHash = Animator.StringToHash("IsGrounded");
 
 private void Update()
 {
-    _animator.SetFloat(SpeedHash, _speed);
-    _animator.SetBool(IsGroundedHash, _isGrounded);
+    _animator.SetFloat(s_speedHash, _speed);
+    _animator.SetBool(s_isGroundedHash, _isGrounded);
 }
 ```
 
@@ -132,8 +132,8 @@ public void CancelAttack()
 - ❌ Never set blend tree parameters to raw, un-smoothed values — this causes jittery animation blending.
 
 ```csharp
-private static readonly int SpeedXHash = Animator.StringToHash("VelocityX");
-private static readonly int SpeedZHash = Animator.StringToHash("VelocityZ");
+private static readonly int s_speedXHash = Animator.StringToHash("VelocityX");
+private static readonly int s_speedZHash = Animator.StringToHash("VelocityZ");
 
 [SerializeField] private float _blendSpeed = 5f;
 
@@ -144,8 +144,8 @@ private void Update()
     Vector2 targetBlend = new Vector2(_velocity.x, _velocity.z);
     _currentBlend = Vector2.MoveTowards(_currentBlend, targetBlend, _blendSpeed * Time.deltaTime);
 
-    _animator.SetFloat(SpeedXHash, _currentBlend.x);
-    _animator.SetFloat(SpeedZHash, _currentBlend.y);
+    _animator.SetFloat(s_speedXHash, _currentBlend.x);
+    _animator.SetFloat(s_speedZHash, _currentBlend.y);
 }
 ```
 
@@ -224,12 +224,12 @@ public class CharacterFX : MonoBehaviour
 - ❌ Avoid relying exclusively on Animator conditions for complex branching logic — drive transitions from code using `SetBool`/`SetTrigger` for clarity.
 
 ```csharp
-private static readonly int DeathStateHash = Animator.StringToHash("Death");
+private static readonly int s_deathStateHash = Animator.StringToHash("Death");
 
 public void PlayDeath()
 {
     // Cross-fade to Death state over 0.2 seconds (normalised)
-    _animator.CrossFade(DeathStateHash, normalizedTransitionDuration: 0.2f);
+    _animator.CrossFade(s_deathStateHash, normalizedTransitionDuration: 0.2f);
 }
 ```
 
@@ -241,7 +241,7 @@ public void PlayDeath()
 - ❌ Avoid modifying layer weights every frame — cache the target weight and lerp to it.
 
 ```csharp
-private static readonly int UpperBodyLayerIndex = 1;
+private static readonly int s_upperBodyLayerIndex = 1;
 
 [SerializeField] private float _aimLayerBlendSpeed = 5f;
 private float _targetAimWeight;
@@ -253,9 +253,9 @@ public void SetAiming(bool isAiming)
 
 private void Update()
 {
-    float current = _animator.GetLayerWeight(UpperBodyLayerIndex);
+    float current = _animator.GetLayerWeight(s_upperBodyLayerIndex);
     float next = Mathf.MoveTowards(current, _targetAimWeight, _aimLayerBlendSpeed * Time.deltaTime);
-    _animator.SetLayerWeight(UpperBodyLayerIndex, next);
+    _animator.SetLayerWeight(s_upperBodyLayerIndex, next);
 }
 ```
 

@@ -2,7 +2,7 @@
 
 **Target: Unity 2022.3 LTS.** All APIs here are Unity 2022.3. Do not use Unity 6-only APIs (`[UxmlElement]`, runtime data binding, etc.) — they do not exist on 2022.3 and will not compile.
 
-> For C# code style within UI controllers, follow the conventions in `CLAUDE.md` (`_camelCase` private/protected fields, PascalCase constants and properties, Allman braces, etc.)
+> For C# code style within UI controllers, follow the conventions in `CLAUDE.md` (`_camelCase` private/internal instance fields, `s_camelCase` private/internal static fields, PascalCase constants and public/protected members, Allman braces, etc.)
 
 Official documentation (fetch on demand if an API is not covered here):
 → https://docs.unity3d.com/2022.3/Documentation/Manual/UIElements.html

@@ -51,52 +51,68 @@ max_line_length = 120
 
 [*.cs]
 # ── Naming conventions ────────────────────────────────────────────────────────
+# Field rules follow the .NET Runtime team's coding style (the 'Identifier names'
+# conventions on learn.microsoft.com, dotnet/docs house style):
+#   • public/protected/protected_internal fields           → PascalCase (any modifier)
+#   • private/internal constants (const is static+const)   → PascalCase
+#   • private/internal static fields                       → s_camelCase
+#   • private/internal instance fields                     → _camelCase
+# The four non-public rules overlap on purpose; specificity orders them:
+# const,static (2 modifiers) > static (1) > none (0), so each field matches the
+# most specific rule (see 'Rule order' in learn.microsoft.com naming-rules).
+# [ThreadStatic] fields use t_ by the same guide, but naming rules cannot match
+# attributes, so that case is by-convention only.
+# The severity on each naming rule is only honoured inside IDEs; this line makes
+# naming violations also surface in `dotnet build` (CI, compile-time).
+dotnet_diagnostic.IDE1006.severity                         = warning
+
 # Shared styles
 dotnet_naming_style.pascal_case.capitalization             = pascal_case
-dotnet_naming_style.camel_case.capitalization              = camel_case
+dotnet_naming_style.s_camel_case.capitalization            = camel_case
+dotnet_naming_style.s_camel_case.required_prefix           = s_
+dotnet_naming_style.underscore_camel_case.capitalization   = camel_case
+dotnet_naming_style.underscore_camel_case.required_prefix  = _
 
-# Private instance fields: _camelCase  (e.g. _health, _isActive)
-dotnet_naming_rule.private_instance_fields.symbols         = private_instance_fields
-dotnet_naming_rule.private_instance_fields.style           = underscore_prefix
-dotnet_naming_rule.private_instance_fields.severity        = warning
-dotnet_naming_symbols.private_instance_fields.applicable_kinds          = field
-dotnet_naming_symbols.private_instance_fields.applicable_accessibilities = private, protected
-dotnet_naming_style.underscore_prefix.capitalization       = camel_case
-dotnet_naming_style.underscore_prefix.required_prefix      = _
-
-# Private static fields: _camelCase  (e.g. _sharedCount, _instance)
-dotnet_naming_rule.private_static_fields.symbols           = private_static_fields
-dotnet_naming_rule.private_static_fields.style             = underscore_prefix
-dotnet_naming_rule.private_static_fields.severity          = warning
-dotnet_naming_symbols.private_static_fields.applicable_kinds            = field
-dotnet_naming_symbols.private_static_fields.applicable_accessibilities  = private, protected
-dotnet_naming_symbols.private_static_fields.required_modifiers          = static
-
-# Constants: PascalCase  (e.g. MaxCount, DefaultSpeed)
-# Accessibility list is explicit (all six levels) so this rule is more specific
-# than the static-field rule below: const is implicitly static, and Roslyn
-# applies the most specific matching rule (see learn.microsoft.com naming-rules).
+# Constants (any accessibility): PascalCase  (e.g. MaxCount, DefaultSpeed)
+# const is implicitly static, so required_modifiers lists both to make this rule
+# strictly more specific than the static-field rules below.
 dotnet_naming_rule.constants.symbols                       = constants
 dotnet_naming_rule.constants.style                         = pascal_case
 dotnet_naming_rule.constants.severity                      = warning
 dotnet_naming_symbols.constants.applicable_kinds           = field
 dotnet_naming_symbols.constants.applicable_accessibilities = public, internal, private, protected, protected_internal, private_protected
-dotnet_naming_symbols.constants.required_modifiers         = const
+dotnet_naming_symbols.constants.required_modifiers         = const, static
 
-# Static readonly fields: PascalCase
-dotnet_naming_rule.static_readonly_fields.symbols          = static_readonly_fields
-dotnet_naming_rule.static_readonly_fields.style            = pascal_case
-dotnet_naming_rule.static_readonly_fields.severity         = warning
-dotnet_naming_symbols.static_readonly_fields.applicable_kinds          = field
-dotnet_naming_symbols.static_readonly_fields.applicable_accessibilities = private, protected
-dotnet_naming_symbols.static_readonly_fields.required_modifiers        = static, readonly
+# Non-public static fields: s_camelCase  (e.g. s_instance, s_sharedCount)
+dotnet_naming_rule.non_public_static_fields.symbols        = non_public_static_fields
+dotnet_naming_rule.non_public_static_fields.style          = s_camel_case
+dotnet_naming_rule.non_public_static_fields.severity       = warning
+dotnet_naming_symbols.non_public_static_fields.applicable_kinds          = field
+dotnet_naming_symbols.non_public_static_fields.applicable_accessibilities = private, internal, private_protected
+dotnet_naming_symbols.non_public_static_fields.required_modifiers        = static
 
-# Public fields: PascalCase
-dotnet_naming_rule.public_fields.symbols                   = public_fields
-dotnet_naming_rule.public_fields.style                     = pascal_case
-dotnet_naming_rule.public_fields.severity                  = warning
-dotnet_naming_symbols.public_fields.applicable_kinds       = field
-dotnet_naming_symbols.public_fields.applicable_accessibilities = public
+# Non-public instance fields: _camelCase  (e.g. _health, _isActive)
+dotnet_naming_rule.non_public_instance_fields.symbols      = non_public_instance_fields
+dotnet_naming_rule.non_public_instance_fields.style        = underscore_camel_case
+dotnet_naming_rule.non_public_instance_fields.severity     = warning
+dotnet_naming_symbols.non_public_instance_fields.applicable_kinds          = field
+dotnet_naming_symbols.non_public_instance_fields.applicable_accessibilities = private, internal, private_protected
+
+# Public and protected fields: PascalCase (any modifier)  (e.g. MaxCount, DefaultSpeed)
+# The runtime guide treats public, protected and protected internal alike
+# (all are visible to external callers); private protected groups with private.
+dotnet_naming_rule.public_protected_fields.symbols         = public_protected_fields
+dotnet_naming_rule.public_protected_fields.style           = pascal_case
+dotnet_naming_rule.public_protected_fields.severity        = warning
+dotnet_naming_symbols.public_protected_fields.applicable_kinds           = field
+dotnet_naming_symbols.public_protected_fields.applicable_accessibilities = public, protected, protected_internal
+
+# Local constants: PascalCase  (e.g. const int MaxRetries = 3)
+dotnet_naming_rule.local_constants.symbols                 = local_constants
+dotnet_naming_rule.local_constants.style                   = pascal_case
+dotnet_naming_rule.local_constants.severity                = warning
+dotnet_naming_symbols.local_constants.applicable_kinds     = local
+dotnet_naming_symbols.local_constants.required_modifiers   = const
 
 # Properties and methods: PascalCase
 dotnet_naming_rule.properties.symbols                      = properties

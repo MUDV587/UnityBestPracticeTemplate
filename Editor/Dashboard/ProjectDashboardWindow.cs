@@ -1345,8 +1345,8 @@ namespace UnityBestPractices.Editor.Dashboard
                             "  • Allman (open-brace-on-new-line) brace style\n" +
                             "  • 4-space indentation, max 120 characters per line\n" +
                             "  • LF line endings and UTF-8 encoding\n" +
-                            "  • _camelCase for private and protected fields (e.g. _health, _instance)\n" +
-                            "  • PascalCase for constants, static readonly, and public fields (e.g. MaxCount)\n" +
+                            "  • _camelCase for private/internal instance fields, s_camelCase for private/internal static fields\n" +
+                            "  • PascalCase for constants (any accessibility) and public/protected fields (e.g. MaxCount)\n" +
                             "  • PascalCase for properties and methods\n" +
                             "  • System using directives sorted first",
                             "Without this file each developer's IDE applies its own default formatting, " +

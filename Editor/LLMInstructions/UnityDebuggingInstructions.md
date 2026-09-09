@@ -497,19 +497,19 @@ private void OnDisable()
 // Debug: Track subscriptions
 public static class GameManager
 {
-    private static event Action _onGameOver;
+    private static event Action s_gameOver; // s_camelCase: private static backing event
 
     public static event Action OnGameOver
     {
         add
         {
             Debug.Log($"Subscriber added: {value.Target?.GetType().Name}.{value.Method.Name}");
-            _onGameOver += value;
+            s_gameOver += value;
         }
         remove
         {
             Debug.Log($"Subscriber removed: {value.Target?.GetType().Name}.{value.Method.Name}");
-            _onGameOver -= value;
+            s_gameOver -= value;
         }
     }
 }

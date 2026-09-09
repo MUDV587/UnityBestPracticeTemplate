@@ -54,13 +54,13 @@ With domain reload disabled, **static fields persist between play sessions**:
 
 ```csharp
 // This value WON'T reset when you stop and start play mode
-private static int _playerCount = 0;
+private static int s_playerCount = 0;
 
 // Fix: Reset in RuntimeInitializeOnLoadMethod
 [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
 private static void ResetStatics()
 {
-    _playerCount = 0;
+    s_playerCount = 0;
 }
 ```
 
@@ -297,9 +297,9 @@ Assembly definitions reduce recompilation scope and enforce code boundaries. For
 [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
 private static void ResetStatics()
 {
-    _instance = null;
-    _playerCount = 0;
-    _cache.Clear();
+    s_instance = null;
+    s_playerCount = 0;
+    s_cache.Clear();
 }
 ```
 

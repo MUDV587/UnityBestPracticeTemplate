@@ -49,8 +49,10 @@ State which files you are creating and where they should go (e.g., `Assets/UI/UX
 
 ### C# naming (follows `UnityCodeStyleInstructions.md`)
 
-- Private/protected instance and static fields: `_camelCase`
-- Constants and static readonly: PascalCase
+- Private/internal instance fields: `_camelCase`
+- Private/internal static fields: `s_camelCase`
+- Constants at any accessibility: PascalCase
+- Public/protected fields: PascalCase
 - Selector string constants: `private const string MyElement = "my-element";`
 - Query all elements in `OnEnable`, not `Awake` or `Update`
 - Unsubscribe all events in `OnDisable`
@@ -81,7 +83,7 @@ panel.pickingMode  = show ? PickingMode.Position : PickingMode.Ignore;
 - [ ] `name` attributes are kebab-case
 - [ ] `class` attributes follow BEM
 - [ ] USS file is referenced in UXML via `<Style src="..." />`
-- [ ] All C# field names follow the naming convention (`_camelCase` for private/protected, PascalCase for constants and public fields)
+- [ ] All C# field names follow the naming convention (`_camelCase` private/internal instance, `s_camelCase` private/internal static, PascalCase constants and public/protected fields)
 - [ ] Element queries are in `OnEnable`
 - [ ] Events are unsubscribed in `OnDisable`
 - [ ] Custom elements use `UxmlFactory` / `UxmlTraits` (not Unity 6 `[UxmlElement]`)

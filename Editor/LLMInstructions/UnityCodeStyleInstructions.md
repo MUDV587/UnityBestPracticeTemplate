@@ -236,9 +236,9 @@ namespace MyGame.Characters
 
 ## Fields
 - ✅ Don't omit the private accessor field though technically its implicit. It provides context about the intent.
-- ✅ Use `_camelCase` for private and protected fields (instance and static) to distinguish them from local variables.
-- ✅ Use PascalCase for constants and static readonly fields to indicate immutability.
-- ✅ Use PascalCase for public fields.
+- ✅ Use `_camelCase` for private and internal instance fields to distinguish them from local variables.
+- ✅ Use `s_camelCase` for private and internal static fields (including static readonly) to distinguish them from instance fields.
+- ✅ Use PascalCase for constants at any accessibility (including private and internal) and for public/protected fields.
 - ✅ Use descriptive names that clearly indicate the field's purpose.
 - ❌ Avoid abbreviations unless they are widely understood (e.g., `UI`, `ID`).
 - ✅ Include units in the name if applicable (e.g., `_speedInMetersPerSecond`).
@@ -251,10 +251,10 @@ namespace MyGame.Characters
 // _camelCase for private fields
 private int _health;
 
-// _camelCase for static fields
-private static int _sharedCount;
+// s_camelCase for static fields
+private static int s_sharedCount;
 
-// PascalCase for constants
+// PascalCase for constants (any accessibility)
 private const int MaxCount = 100;
 
 // Use [SerializeField] rather than exposing your field publicly; keep it private or make it a property
@@ -1043,11 +1043,11 @@ public class PlayerController : MonoBehaviour
 // Base state class
 public abstract class PlayerState
 {
-    protected PlayerController _controller;
+    protected PlayerController Controller;
 
     public PlayerState(PlayerController controller)
     {
-        _controller = controller;
+        Controller = controller;
     }
 
     public abstract void Enter();

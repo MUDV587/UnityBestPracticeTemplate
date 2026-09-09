@@ -432,7 +432,7 @@ private void Start()
 }
 
 // ✅ Good - uses MaterialPropertyBlock (no allocation after first call)
-private static readonly int ColorId = Shader.PropertyToID("_Color");
+private static readonly int s_colorId = Shader.PropertyToID("_Color");
 private MaterialPropertyBlock _propertyBlock;
 private Renderer _renderer;
 
@@ -445,7 +445,7 @@ private void Awake()
 private void SetColor(Color color)
 {
     _renderer.GetPropertyBlock(_propertyBlock);
-    _propertyBlock.SetColor(ColorId, color);
+    _propertyBlock.SetColor(s_colorId, color);
     _renderer.SetPropertyBlock(_propertyBlock);
 }
 ```
@@ -460,11 +460,11 @@ private void SetColor(Color color)
 _material.SetFloat("_Intensity", value);
 
 // ✅ Good - cached ID
-private static readonly int IntensityId = Shader.PropertyToID("_Intensity");
+private static readonly int s_intensityId = Shader.PropertyToID("_Intensity");
 
 private void UpdateShader(float value)
 {
-    _material.SetFloat(IntensityId, value);
+    _material.SetFloat(s_intensityId, value);
 }
 ```
 
@@ -757,15 +757,15 @@ using Unity.Profiling;
 
 public class PerformanceCriticalSystem : MonoBehaviour
 {
-    private static readonly ProfilerMarker _updateMarker = 
+    private static readonly ProfilerMarker s_updateMarker = 
         new ProfilerMarker("PerformanceCriticalSystem.Update");
     
-    private static readonly ProfilerMarker _processEnemiesMarker = 
+    private static readonly ProfilerMarker s_processEnemiesMarker = 
         new ProfilerMarker("PerformanceCriticalSystem.ProcessEnemies");
 
     private void Update()
     {
-        using (_updateMarker.Auto())
+        using (s_updateMarker.Auto())
         {
             ProcessEnemies();
             UpdateUI();
@@ -774,7 +774,7 @@ public class PerformanceCriticalSystem : MonoBehaviour
 
     private void ProcessEnemies()
     {
-        using (_processEnemiesMarker.Auto())
+        using (s_processEnemiesMarker.Auto())
         {
             // Expensive processing...
         }

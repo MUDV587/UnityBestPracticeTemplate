@@ -50,9 +50,13 @@ File naming follows Unity's convention: `{priority}-{menu path}-{default filenam
 
 These apply to all `.cs` files in this repo and in host projects using the LLM instructions.
 
-**Field naming**
-- `_camelCase` — private/protected instance and static fields
-- PascalCase — constants, static readonly, and public fields
+**Field naming** (per the .NET Runtime team's coding style)
+- `_camelCase` — private/internal instance fields
+- `s_camelCase` — private/internal static fields (including static readonly)
+- PascalCase — constants (any accessibility, including private/internal)
+- PascalCase — public, protected, and protected internal fields (any modifier)
+- PascalCase — properties and methods
+- By convention only (not enforceable via .editorconfig): `[ThreadStatic]` fields use `t_`
 
 **Class member order**
 1. Using statements → namespace → fields → constructors → properties → events → MonoBehaviour methods (Awake, OnEnable, Start, OnDisable, Update order) → public methods → private methods

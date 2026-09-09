@@ -377,11 +377,11 @@ Use the State pattern for complex state-dependent behavior, such as character co
 // Base state class
 public abstract class PlayerState
 {
-    protected PlayerController _controller;
+    protected PlayerController Controller;
 
     public PlayerState(PlayerController controller)
     {
-        _controller = controller;
+        Controller = controller;
     }
 
     public abstract void Enter();
@@ -505,13 +505,13 @@ public class UIGameController : MonoBehaviour
 // UITKBaseClass.cs — Base class for all UI Toolkit panels (actual project pattern)
 public abstract class UITKBaseClass : MonoBehaviour
 {
-    protected UIDocument _uiDocument;
-    protected VisualElement _rootVisualElement;
+    protected UIDocument UiDocument;
+    protected VisualElement RootVisualElement;
 
     protected virtual void Awake()
     {
-        _uiDocument = GetComponent<UIDocument>();
-        _rootVisualElement = _uiDocument.rootVisualElement;
+        UiDocument = GetComponent<UIDocument>();
+        RootVisualElement = UiDocument.rootVisualElement;
         InitializeElements();   // Step 1: subclass caches UI elements
     }
 
@@ -544,8 +544,8 @@ public class MapTileView : UITKBaseClass
 
     protected override void InitializeElements()
     {
-        _mapTilePanel = _rootVisualElement.Q<VisualElement>("map-tile-panel");
-        _populationLabel = _rootVisualElement.Q<Label>("population-label");
+        _mapTilePanel = RootVisualElement.Q<VisualElement>("map-tile-panel");
+        _populationLabel = RootVisualElement.Q<Label>("population-label");
     }
 
     protected override void RegisterCallbacks()
@@ -590,28 +590,28 @@ public class MapTileView : UITKBaseClass
 // Singleton pattern matching this project's conventions (from UIGameController.cs)
 public class UIGameController : MonoBehaviour
 {
-    // _camelCase for static fields
-    private static UIGameController _instance;
+    // s_camelCase for static fields
+    private static UIGameController s_instance;
 
     public static UIGameController Instance
     {
         get
         {
-            if (_instance == null)
-                _instance = FindObjectOfType<UIGameController>();
-            return _instance;
+            if (s_instance == null)
+                s_instance = FindObjectOfType<UIGameController>();
+            return s_instance;
         }
     }
 
     private void Awake()
     {
         // Ensure singleton reference is set and handle duplicates
-        if (_instance != null && _instance != this)
+        if (s_instance != null && s_instance != this)
         {
             Destroy(gameObject);
             return;
         }
-        _instance = this;
+        s_instance = this;
     }
 }
 ```
@@ -620,26 +620,26 @@ public class UIGameController : MonoBehaviour
 // Singleton with DontDestroyOnLoad for cross-scene persistence
 public class AudioManager : MonoBehaviour
 {
-    private static AudioManager _instance;
+    private static AudioManager s_instance;
 
     public static AudioManager Instance
     {
         get
         {
-            if (_instance == null)
-                _instance = FindObjectOfType<AudioManager>();
-            return _instance;
+            if (s_instance == null)
+                s_instance = FindObjectOfType<AudioManager>();
+            return s_instance;
         }
     }
 
     private void Awake()
     {
-        if (_instance != null && _instance != this)
+        if (s_instance != null && s_instance != this)
         {
             Destroy(gameObject);
             return;
         }
-        _instance = this;
+        s_instance = this;
         DontDestroyOnLoad(gameObject);
     }
 }
@@ -661,16 +661,16 @@ public class AudioManager : MonoBehaviour
 // ServiceLocator.cs — Lightweight service registry (actual project code)
 public static class ServiceLocator
 {
-    private static readonly Dictionary<Type, object> _services = new();
+    private static readonly Dictionary<Type, object> s_services = new();
 
     public static void Register<T>(T service) where T : class
     {
-        _services[typeof(T)] = service;
+        s_services[typeof(T)] = service;
     }
 
     public static T Resolve<T>() where T : class
     {
-        if (_services.TryGetValue(typeof(T), out object service))
+        if (s_services.TryGetValue(typeof(T), out object service))
         {
             return service as T;
         }
@@ -679,12 +679,12 @@ public static class ServiceLocator
 
     public static void Unregister<T>() where T : class
     {
-        _services.Remove(typeof(T));
+        s_services.Remove(typeof(T));
     }
 
     public static void Clear()
     {
-        _services.Clear();
+        s_services.Clear();
     }
 }
 ```
