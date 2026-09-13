@@ -5,6 +5,27 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this package adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-09-08
+### Changed
+- **Complete migration from Unity package to CLI/agent-driven toolkit** — no longer installed via `manifest.json`; run `setup-project.sh` (or the `unity-project-setup` skill) against a project instead. Package identity `com.unity.best-practices` retired; `package.json` replaced by `toolkit.json` (plain metadata, not a UPM manifest)
+- **Setup logic moved to `SetupScripts/Editor/`** — `NewProjectWizard.cs` replaced by `BestPracticesSetup.Run()`, a headless entry point invoked via `unity run -- -executeMethod`; every step's `[MenuItem]`/`EditorWindow` wrapper removed since there is no menu bar in this model. Scripts are staged into the target project, run once, then deleted — no residue
+- **`ConfigurePresets.cs`** — preset path changed from `Packages/com.unity.best-practices/Editor/Presets` to `Assets/Settings/Presets` (its destination once copied in by the pipeline)
+- **`Presets/` and `ScriptTemplates/`** moved from `Editor/` to the repo root; both keep their `.meta` files (everything else in the repo dropped `.meta`, since this is no longer a Unity project)
+- **`GenerateGitIgnore`/`GenerateGitAttributes`/`GenerateEditorConfig`** — replaced the overwrite-confirmation `EditorUtility.DisplayDialog` (would hang in headless batch mode) with a skip-if-exists check
+- **`SetupTagsAndLayers.cs`** — was an empty file; `NewProjectWizard` called `EditorApplication.ExecuteMenuItem("...Setup Tags and Layers")`, but no such menu item existed anywhere in the repo, so this step was a silent no-op in every prior release. Replaced with a real implementation applying tags/sorting layers/physics layers via `SerializedObject` on `TagManager.asset`; default physics layer slots corrected from 6–15 to the actually user-definable 8–17 (slots 0–7 are reserved by Unity)
+- **LLM instruction content retired from this repo** — `Editor/LLMInstructions/` (19 files) and `Editor/AgentSkills/` (2 files) removed; sourced live instead from [`unity-code-style-guide`](https://github.com/krogh-jacobsen/unity-code-style-guide), cloned into the target project as a `setup-project.sh` step
+- **Stale texture presets removed** — `HDRITextureImporter`, `RoughnessTextureImporter`, `SingleSpriteTextureImporter`, `SpriteAtlasTextureImporter` deleted from `Presets/Textures/`; these were superseded by the 1.4.3 consolidation but never actually removed from disk
+
+### Removed
+- **Ongoing Editor tooling** — Project Dashboard, all 10 Validators, PlayerPrefs Inspector, Assembly Definitions Window, Layer Collision Matrix Window, Package Boilerplate Window. These require a permanently-installed package to keep working, which contradicts the CLI/one-time-setup model
+- **Unity MCP relay config** — `ConfigureUnityMCP.cs` and all related Dashboard status polling removed
+- **`Runtime/` assembly** — `CodeStyleGuide.cs`, `RuntimeController.cs`, and `ProjectTagsAndLayers.cs` (ScriptableObject) removed; no Runtime assembly ships anymore since this isn't an installed package
+- **`CopyAIFilesToProject.cs`** — its `PackageManager.PackageInfo.FindForAssembly` lookup depended on being an installed package; the copy-into-project pattern survives as a bash step in `setup-project.sh`, now pointed at the style guide clone
+
+### Added
+- **`setup-project.sh`** — the CLI pipeline: stages setup scripts, deposits Presets/ScriptTemplates, clones the style guide, runs `BestPracticesSetup.Run()` via `unity run`, copies selected samples, cleans up
+- **`skills/unity-project-setup/SKILL.md`** — agent-driven fallback for driving the same steps against a live (already-open) Editor via `unity command eval`, when `setup-project.sh` can't acquire the batch-mode lock
+
 ## [1.4.3] - 2026-03-15
 ### Added
 - **Unity MCP relay** — `ConfigureUnityMCP.cs` writes `UserSettings/mcp.json` to wire up the Unity MCP relay server; menu item `Tools → Unity Project Configurator → AI → Configure Unity MCP`; detects whether the relay binary is installed and whether the file already exists before writing

@@ -1,192 +1,129 @@
-# Unity Project Configurator — `com.unity.best-practices`
+# Unity Best Practices Toolkit
 
-A Unity editor toolkit that accelerates project setup, enforces consistent C# coding standards, and supercharges AI-assisted development with curated LLM instruction files and agent skills.
+A CLI/agent-driven toolkit that sets up a new (or existing) Unity 6 project in one pass: folder
+scaffold, assembly definitions, import presets, tags & layers, `.gitignore`/`.gitattributes`/
+`.editorconfig`, recommended project/iteration/asset-pipeline settings, script templates, and
+sample code — plus an up-to-date AI coding-style guide.
 
 Supports **Unity 6000.3+** · License: **MIT**
+
+**This is not a Unity package.** There is nothing to add to `Packages/manifest.json`. You run this
+toolkit once against a project using the [Unity CLI](https://docs.unity.com/en-us/unity-cli), and
+it leaves behind only the results — no installed assembly, no menu items, no ongoing footprint.
 
 ---
 
 ## Quick Start
 
-Open the dashboard from the top menu — it shows live status of every setup step:
+Requires the [`unity` CLI](https://docs.unity.com/en-us/unity-cli) on your PATH and the target
+project's Editor **closed** (batch mode needs the lock — see below if it's open).
 
-**Tools → Unity Project Configurator → Open Dashboard**
+```bash
+git clone https://github.com/krogh-jacobsen/UnityBestPracticeTemplate.git
+cd UnityBestPracticeTemplate
+./setup-project.sh --project /path/to/MyGame --editor-version 6000.3.5f1 --samples ObjectPooling,StateMachine
+```
 
-For a one-click full setup, use the wizard:
+This:
+1. Stages the setup scripts into the project, runs them headlessly via `unity run -- -executeMethod`,
+   then deletes them — no trace of this toolkit is left behind.
+2. Registers import presets and copies script templates in permanently (both need to persist for
+   Unity to keep resolving them).
+3. Clones [`unity-code-style-guide`](https://github.com/krogh-jacobsen/unity-code-style-guide) into
+   `AI/unity-code-style-guide/` and drops pointer files at `CLAUDE.md`, `AGENTS.md`,
+   `.github/copilot-instructions.md`, `.cursorrules`, and `.junie/guidelines.md`.
+4. Copies any requested sample code into `Assets/{ProjectName}/Scripts/Samples/`.
 
-**Tools → Unity Project Configurator → Setup → New Project Wizard**
+Run `./setup-project.sh --help` for every flag.
 
-Or run individual steps:
+### Already have the project open in a live Editor?
 
-| Step | Action | Menu Path | Description |
-|------|--------|-----------|-------------|
-| 1 | **Open Dashboard** | Tools → Unity Project Configurator | Project health overview — live status of all steps |
-| 2 | **Setup Project Folders** | Tools → Unity Project Configurator → Setup | Scaffolds the recommended folder structure |
-| 3 | **Configure Project Settings** | Tools → Unity Project Configurator → Setup | Applies version control, enter play mode options, etc. |
-| 4 | **Configure Import Presets** | Tools → Unity Project Configurator → Setup | Registers import presets in Preset Manager |
-| 5 | **Setup Tags and Layers** | Tools → Unity Project Configurator → Setup | Applies tags and layers from a config asset |
-| 6 | **Generate .gitignore** | Tools → Unity Project Configurator → Version Control | Creates a Unity-optimised `.gitignore` |
-| 7 | **Generate .editorconfig** | Tools → Unity Project Configurator → Code | Creates an `.editorconfig` enforcing the C# style guide |
-| 8 | **Copy AI Files to Project** | Tools → Unity Project Configurator → AI | Copies LLM instruction files and agent skills into your project |
+`unity run` can't also hold the batch-mode lock. Instead, ask an agent to run the
+**`unity-project-setup`** Claude Code skill (`skills/unity-project-setup/SKILL.md`) — it drives the
+exact same steps through a live Editor connection via `unity command eval`.
 
 ---
 
 ## What's Included
 
-### Project Dashboard
-A single-window overview of your project's setup health. Each card shows the current status and lets you apply the corresponding setting or tool without leaving the window. Every card has a `?` button with a brief explainer.
+### Setup pipeline (`setup-project.sh` / `SetupScripts/Editor/`)
 
-**Open:** Tools → Unity Project Configurator → Open Dashboard
+One orchestrator, `BestPracticesSetup.Run()`, runs every step below in order:
 
-### New Project Wizard
-Runs all setup steps in one click: creates the folder structure, applies project settings, configures import presets, sets up tags and layers, and generates `.gitignore` and `.editorconfig`.
-
-**Open:** Tools → Unity Project Configurator → Setup → New Project Wizard
-
-### C# Coding Style Guide
-
-A living `CodeStyleGuide.cs` reference file that documents naming conventions, formatting rules, and architectural patterns for Unity C# projects. Acts as the single source of truth for the team's coding standards.
-
-### LLM Instruction Files
-Ready-to-use instruction files for AI coding assistants (Claude Code, GitHub Copilot, Gemini CLI, Codex). Drop them into your project's AI configuration to give your LLM deep context about your Unity codebase.
-
-| File | Purpose |
+| Step | What it does |
 |---|---|
-| `UnityCodeStyleInstructions.md` | Enforces the project's C# style guide |
-| `UnityPerformanceOptimizationInstructions.md` | Guides the LLM toward allocation-free, performant Unity patterns |
-| `UnityDesignPatternsInstructions.md` | Promotes idiomatic Unity architecture |
-| `UnityDebuggingInstructions.md` | Debugging approach and tooling conventions |
-| `UnityUIToolkitInstructions.md` | UI Toolkit-specific patterns and best practices |
-| `UnityProjectConfigurationInstructions.md` | Project settings and configuration guidance |
-| `UnityAudioInstructions.md` | Audio system patterns and best practices |
-| `UnityAnimationInstructions.md` | Animation system patterns and best practices |
-| `UnityInputSystemInstructions.md` | Input System usage and conventions |
-| `DocumentationTemplate.md` | Standard format for in-code documentation |
-| `GameDesignDocument.md` | GDD template for consistent design documentation |
-| `copilot-instructions.md` | GitHub Copilot workspace instructions |
-| `custom-packages.md` | Documents custom package conventions |
+| Project Folders | Creates the recommended folder hierarchy under `Assets/{ProjectName}` |
+| Assembly Definitions | Generates `.asmdef` files in Scripts, Editor, and Tests using `CompanyName.ProductName` as the root namespace |
+| Import Presets | Registers the presets below in the Preset Manager |
+| Tags & Layers | Registers a default set of tags, sorting layers, and physics layers — see below |
+| `.gitignore` / `.gitattributes` / `.editorconfig` | Generated at the project root |
+| Project Settings | Enter Play Mode, .NET Standard 2.1, Input System, Incremental GC, Asset Serialization, Version Control, Create at Origin, New Hierarchy, Asset Manager import location |
+| Iteration Settings | Script Changes → Recompile After Finished Playing, Async Shader Compilation on, Managed Stripping disabled |
+| Asset Pipeline | Auto Refresh → Outside Playmode, Import Worker Count 50%, Compress Textures on Import |
 
-**How to use per tool:**
+Each step is also callable individually (see `SetupScripts/Editor/*.cs`) if you only want one part —
+either by adjusting `BestPracticesSetup.Run()` for a headless re-run, or via `unity command eval`
+against a live Editor.
 
-- **Claude Code** — Copy the files you need and reference them in your `CLAUDE.md`
-- **GitHub Copilot** — Copy into `.github/copilot-instructions.md` or reference via workspace settings
-- **Gemini CLI / Codex** — Add to your IDE's LLM context configuration
+### AI coding-style guide
 
-Run **Tools → Unity Project Configurator → AI → Copy AI Files to Project** to copy all instruction files into your project with one click.
+Sourced live from [`unity-code-style-guide`](https://github.com/krogh-jacobsen/unity-code-style-guide)
+rather than duplicated here — that repo is the maintained source for `AGENTS.md`, the opinionated
+`UnityStyleGuide.md`, per-domain `UnityReferenceGuides/`, and a `unity-guide-audit` skill that checks
+a project against them. `--skip-style-guide` opts out if you'd rather manage this yourself.
 
-### Agent Skills
-
-The package includes a VS Code / GitHub Copilot agent skill file (`SKILL.md`) that exposes the instruction files as a named skill for use in agent mode. Once copied into a `.github/` folder that Copilot can discover, the skill can be invoked by name to pull in deep Unity context on demand.
-
-### Import Presets
-Performance-optimised importer presets that apply consistent, best-practice settings automatically when assets are dropped into the matching folder.
-
-**Textures**
+### Import Presets (`Presets/`)
 
 | Preset | Matches |
 |--------|----------|
-| `AlbedoTextureImporter` | `Assets/**/Textures/Albedo/**` |
-| `NormalTextureImporter` | `Assets/**/Textures/Normal/**` |
-| `RoughnessTextureImporter` | `Assets/**/Textures/Roughness/**` |
-| `MaskTextureImporter` | `Assets/**/Textures/Mask/**` |
-| `HDRITextureImporter` | `Assets/**/Textures/HDRI/**` |
-| `SingleSpriteTextureImporter` | `Assets/**/UI/Sprites/**` |
-| `SpriteAtlasTextureImporter` | `Assets/**/UI/Sprites/Atlas/**` |
-
-**Audio**
-
-| Preset | Matches |
-|--------|----------|
+| `UISpriteTextureImporter` | `Assets/**/Textures/UI/**` |
+| `AlbedoTextureImporter` | `Assets/**/Textures/Environment/Albedo/**` |
+| `NormalTextureImporter` | `Assets/**/Textures/Environment/Normal/**` |
+| `MaskTextureImporter` | `Assets/**/Textures/Environment/Masks/**` |
 | `SFXAudioImporter` | `Assets/**/Audio/SFX/**` |
 | `MusicAudioImporter` | `Assets/**/Audio/Music/**` |
 | `AmbienceAudioImporter` | `Assets/**/Audio/Ambience/**` |
 | `UIAudioImporter` | `Assets/**/Audio/UI/**` |
-
-**Models & Animations**
-
-| Preset | Matches |
-|--------|----------|
 | `FBXModelImporter` | `Assets/**/Art/Models/**` |
 | `FBXAnimationImporter` | `Assets/**/Art/Animations/**` |
 
-> Run **Tools → Unity Project Configurator → Setup → Configure Import Presets** to register all of the above automatically. You can review and edit them in **Edit → Project Settings → Preset Manager**.
+Rationale, settings tables, and platform-specific guidance (including reference-only coverage of
+Roughness/HDRI/Video/Font import, which don't ship as presets) live in [`Presets/readme.md`](Presets/readme.md).
 
-### Script Templates
-Custom script templates available via **Assets → Create → Scripting** that generate boilerplate matching the project's coding style guide out of the box.
+### Script Templates (`ScriptTemplates/`)
 
-- MonoBehaviour Script
-- ScriptableObject Script
-- Empty C# Script
-- UI Toolkit View
+Copied to the target project's `Assets/ScriptTemplates/` and available via **Assets → Create →
+Scripting** after an Editor restart: MonoBehaviour, ScriptableObject, Empty C# Script, UI Toolkit
+View, Interface, Custom Editor, Editor Window, Property Drawer, Unit Test (EditMode/PlayMode),
+Static Event, Object Pool Handler, State, NetworkBehaviour. Full list with descriptions in
+[`ScriptTemplates/readme.md`](ScriptTemplates/readme.md).
 
-### Tags & Layers Setup
-
-Register a standard set of tags, sorting layers, and physics layers from a configurable ScriptableObject.
+### Tags & Layers
 
 **Default Tags:** `Player`, `Enemy`, `NPC`, `Projectile`, `Pickup`, `Interactable`, `Checkpoint`, `SpawnPoint`, `Trigger`, `MainCamera`
 
-**Default Sorting Layers (render order):**
+**Default Sorting Layers (render order):** `Background`, `Environment`, `Props`, `Characters`, `Foreground`, `UI`, `Overlay`
 
-| Order | Layer |
-|-------|-------|
-| 1 | `Background` |
-| 2 | `Environment` |
-| 3 | `Props` |
-| 4 | `Characters` |
-| 5 | `Foreground` |
-| 6 | `UI` |
-| 7 | `Overlay` |
+**Default Physics Layers (slots 8–17):** `Player`, `Enemy`, `NPC`, `Projectile`, `Pickup`, `Interactable`, `Ground`, `Environment`, `Trigger`, `Ragdoll`
 
-**Default Physics Layers:**
+Existing tags/layers are preserved — only missing entries are added. Occupied physics layer slots
+are skipped with a warning rather than overwritten.
 
-| Slot | Layer |
-|------|-------|
-| 6 | `Player` |
-| 7 | `Enemy` |
-| 8 | `NPC` |
-| 9 | `Projectile` |
-| 10 | `Pickup` |
-| 11 | `Interactable` |
-| 12 | `Ground` |
-| 13 | `Environment` |
-| 14 | `Trigger` |
-| 15 | `Ragdoll` |
+### Samples (`Samples/`)
 
-**How to customise:**
+Opt in via `--samples a,b,c`:
 
-1. Create a config asset: **Assets → Create → Project Configurator → Project Tags and Layers**
-2. Edit the tags, sorting layers, and physics layers in the Inspector
-3. Run **Tools → Unity Project Configurator → Setup → Setup Tags and Layers**
-
-> If no config asset is found in the project, you'll be prompted to use the package defaults. Existing tags and layers are preserved — only new entries are added.
-
-## Menu Reference
-
-| Submenu | Item | Description |
-|---------|------|-------------|
-| *(root)* | **Open Dashboard** | Project health overview — live status of all setup steps with one-click apply buttons and `?` explainer cards |
-| *(root)* | **Project Health** | Compact project health window |
-| **Setup** | **New Project Wizard** | One-click guided wizard that runs all setup steps in sequence |
-| **Setup** | **Setup Project Folders** | Scaffolds the recommended folder structure under `Assets/` |
-| **Setup** | **Configure Project Settings** | Applies version control mode, enter play mode options, and other project settings |
-| **Setup** | **Configure Import Presets** | Registers all import presets in Preset Manager with `**` wildcard folder filters |
-| **Setup** | **Setup Tags and Layers** | Applies tags, sorting layers, and physics layers from a config asset |
-| **Code** | **Assembly Definitions** | Opens the assembly definitions inspector window |
-| **Code** | **Generate Assembly Definitions** | Creates `.asmdef` files using `CompanyName.ProductName` as the root namespace |
-| **Code** | **Generate .editorconfig** | Creates an `.editorconfig` enforcing the C# style guide |
-| **Version Control** | **Generate .gitignore** | Creates a Unity-optimised `.gitignore` at the project root |
-| **Version Control** | **Generate .gitattributes** | Creates a `.gitattributes` file for Git LFS |
-| **AI** | **Copy AI Files to Project** | Copies LLM instruction files and agent skills into your project |
-| **Utilities** | **Layer Collision Matrix** | Visual editor for the physics layer collision matrix |
-| **Utilities** | **PlayerPrefs Inspector** | Inspect and edit PlayerPrefs at runtime |
-| **Utilities** | **Test Editor Log** | Verifies the editor assembly is loaded |
-| **Utilities** | **Test Editor Log (calls runtime)** | Verifies editor → runtime assembly reference |
+| Sample | Demonstrates |
+|---|---|
+| `ScriptableObjectEventSystem` | Observer pattern using `GameEvent` ScriptableObjects |
+| `ObjectPooling` | `ObjectPool<T>` spawner with auto-release via Unity 6 `Awaitable` |
+| `UIToolkitMVP` | UXML + USS + presenter wiring for the Model-View-Presenter pattern |
+| `StateMachine` | Enum-based state machine with `IState` and `OnEnter`/`OnUpdate`/`OnExit` |
+| `AudioManager` | Pooled `AudioSource` manager with `AudioMixer` routing and PlayerPrefs volume persistence |
 
 ---
 
 ## Project Folder Structure
-
-Running **Tools → Unity Project Configurator → Setup → Setup Project Folders** creates the following layout:
 
 ```
 Assets/
@@ -194,37 +131,28 @@ Assets/
 ├── Resources/
 ├── Documentation/
 ├── ThirdParty/
-└── _ProjectName/
+├── Settings/
+│   └── Presets/
+├── ScriptTemplates/
+└── {ProjectName}/
     ├── Art/
-    │   ├── Animations/
-    │   │   ├── Clips/
-    │   │   └── Controllers/
-    │   ├── Audio/
-    │   │   ├── Ambience/
-    │   │   ├── Music/
-    │   │   ├── SFX/
-    │   │   └── UI/
+    │   ├── Animations/{Clips,Controllers}/
+    │   ├── Audio/{Ambience,Music,SFX,UI}/
     │   ├── Fonts/
-    │   ├── Materials/
-    │   │   └── Physics/
+    │   ├── Materials/Physics/
     │   ├── Models/
     │   ├── Shaders/
     │   ├── Sprites/
-    │   ├── Textures/
-    │   │   ├── Albedo/
-    │   │   ├── Normal/
-    │   │   ├── Roughness/
-    │   │   ├── Mask/
-    │   │   └── HDRI/
+    │   ├── Textures/{Albedo,Normal,Roughness,Mask,HDRI}/
     │   └── VFX/
     ├── Scripts/
     │   ├── Core/
     │   ├── UI/
-    │   └── Utilities/
+    │   ├── Utilities/
+    │   └── Samples/          (only if --samples was used)
     ├── Editor/
     ├── UI/
-    │   ├── Sprites/
-    │   │   └── Atlas/
+    │   ├── Sprites/Atlas/
     │   ├── UXML/
     │   ├── USS/
     │   └── Settings/
@@ -236,40 +164,8 @@ Assets/
     └── Plugins/
 ```
 
-> UI sprites live under `UI/Sprites/` (not `Art/Textures/`) because they are logically part of the UI system rather than general art assets.
-
----
-
-## Installation
-
-### Via Unity Package Manager (recommended)
-
-1. Open **Window → Package Manager**
-2. Click the **+** button in the top-left corner
-3. Select **Add package from git URL…**
-4. Enter the following URL and click **Add**:
-
-```
-https://github.com/krogh-jacobsen/UnityBestPracticeTemplate.git
-```
-
-To lock to a specific version, append the tag:
-
-```
-https://github.com/krogh-jacobsen/UnityBestPracticeTemplate.git#1.4.2
-```
-
-### Via manifest.json
-
-Add the following entry to your project's `Packages/manifest.json`:
-
-```json
-{
-  "dependencies": {
-    "com.unity.best-practices": "https://github.com/krogh-jacobsen/UnityBestPracticeTemplate.git"
-  }
-}
-```
+> UI sprites live under `UI/Sprites/` (not `Art/Textures/`) because they are logically part of the
+> UI system rather than general art assets.
 
 ---
 
@@ -277,26 +173,25 @@ Add the following entry to your project's `Packages/manifest.json`:
 
 | Problem | Solution |
 |---------|----------|
-| **Dashboard shows all sections as errors** | Click **Refresh** — the window auto-refreshes on open but styles may not have initialised on first paint. |
-| **Package fails to install from Git** | Ensure you have Git installed and accessible from your system PATH. Check the Unity Console for detailed error messages. |
-| **Presets not applying to imported assets** | Verify the glob paths in **Edit → Project Settings → Preset Manager**. Presets use `**` wildcard patterns and match the target folder name anywhere under `Assets/` — no manual filter updates needed after renaming. |
-| **Script templates not appearing** | Restart Unity after installation. Templates appear under **Assets → Create → Scripting**. |
-| **"Test Editor Log (calls runtime)" logs an error** | The runtime assembly may not be referenced. Check that the Editor `.asmdef` references the Runtime `.asmdef`. |
-| **Folder structure already partially exists** | Safe to re-run — `Setup Project Folders` skips folders that already exist. |
-| **Assembly definitions not generating** | Run `Setup Project Folders` first. The generator requires `Assets/_ProjectName` to exist. |
-| **`.gitignore` / `.editorconfig` not appearing** | Check the project root folder (parent of `Assets/`). The files are created outside the `Assets/` directory and won't appear in the Unity Project window. |
-| **Tags and layers not appearing after setup** | Check `Edit → Project Settings → Tags and Layers`. If a physics layer slot was already occupied, a warning is logged in the Console. |
-| **Multiple ProjectTagsAndLayers configs found** | The tool uses the first one found. Keep only one config asset in your project. |
+| **`setup-project.sh` fails immediately with a lockfile error** | A live Editor already has the project open. Close it, or run setup via the `unity-project-setup` skill instead. |
+| **`unity: command not found`** | Install the Unity CLI — see the `unity-cli` skill or https://docs.unity.com/en-us/unity-cli. |
+| **Script templates not appearing** | Restart the Unity Editor. Templates appear under **Assets → Create → Scripting** and are only registered at Editor startup. |
+| **Presets not applying to imported assets** | Verify the glob paths in **Edit → Project Settings → Preset Manager**. They use `**` wildcards and match the folder name at any depth under `Assets/`. |
+| **`.gitignore` / `.gitattributes` / `.editorconfig` skipped, not overwritten** | Setup does not overwrite existing files at the project root — delete or edit them yourself if you want the toolkit's version. |
+| **Tags and layers not appearing after setup** | Check `Edit → Project Settings → Tags and Layers`. If a physics layer slot was already occupied by a different name, a warning is logged and that entry is skipped. |
+| **Assembly definitions not generating** | `SetupProjectFolders` must run first — `setup-project.sh` always runs the full pipeline in order, so this only happens if you're calling steps individually out of order. |
 
 ---
 
 ## Contributing
 
-1. Clone the repository
-2. Open the dev project at `UnityBestPracticesPackage-Dev/` in Unity
-3. The package source lives in `LocalPackages/UnityBestPracticeTemplate/`
-4. Make your changes and test via the menu items under **Tools → Unity Project Configurator**
-5. Submit a pull request
+1. Clone the repository.
+2. Edit the setup scripts under `SetupScripts/Editor/` directly — this repo is not a Unity project,
+   so there's no local-install step. To test a change, point `setup-project.sh` at a scratch Unity
+   project.
+3. Update `Presets/readme.md`, `ScriptTemplates/readme.md`, or this file if you add a preset,
+   template, or sample.
+4. Propose a version bump (see `CLAUDE.md`) before submitting.
 
 ---
 

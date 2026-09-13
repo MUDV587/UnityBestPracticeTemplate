@@ -1,0 +1,27 @@
+{
+  "name": "unity-best-practices-toolkit",
+  "version": "2.0.0",
+  "description": "A CLI/agent-driven Unity 6 project setup toolkit: folder scaffold, assembly definitions, import presets, tags & layers, project/iteration/asset-pipeline settings, script templates, and samples. Not a Unity package — run setup-project.sh (or the unity-project-setup skill) against a project instead of installing.",
+  "unityMinVersion": "6000.3",
+  "license": "MIT",
+  "author": {
+    "name": "Krogh-Jacobsen",
+    "url": "https://github.com/krogh-jacobsen/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/krogh-jacobsen/UnityBestPracticeTemplate.git"
+  },
+  "keywords": [
+    "code-style",
+    "best-practices",
+    "guidelines",
+    "c-sharp",
+    "unity",
+    "unity-cli",
+    "coding-standards",
+    "claude code",
+    "codex",
+    "gemini cli"
+  ]
+}

@@ -2,53 +2,76 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Package identity
+## Toolkit identity
 
-- Package ID: `com.unity.best-practices`
-- Unity minimum version: 6000.3
-- Installed via git URL: `https://github.com/krogh-jacobsen/UnityBestPracticeTemplate.git`
-- Two assemblies: `com.unity.best-practices.Runtime.asmdef` and `com.unity.best-practices.Editor.asmdef`
+- Not a Unity package — there is no `package.json`, no `.asmdef`, and this repo is not installed via
+  `Packages/manifest.json`. It is a CLI/agent-driven setup toolkit: a collection of setup routines,
+  reference assets, and a Claude Code skill, applied to a Unity project on demand.
+- Metadata/versioning lives in `toolkit.json` (name, version, `unityMinVersion`, keywords) — it is not
+  a UPM manifest and nothing reads it at runtime.
+- Unity minimum version: 6000.3 (targets Unity 6 APIs such as the Asset Manager import-location keys
+  and `Il2CppCodeGeneration`).
+- Style/instruction content is **not** authored here — it's sourced live from
+  `https://github.com/krogh-jacobsen/unity-code-style-guide` as one step of the setup pipeline.
 
 ## Development workflow
 
-This is a Unity package with no standalone build or test runner. All validation happens inside a host Unity project that has the package installed locally or via git.
+There is no standalone build or test runner. Validation is end-to-end against a real Unity project:
 
-- **Install locally**: Add `"com.unity.best-practices": "file:../LocalPackages/UnityBestPracticeTemplate"` to the host project's `Packages/manifest.json`.
-- **Script templates**: Changes take effect only after restarting the Unity Editor — templates are registered at startup.
-- **Import presets**: Must be wired up in **Edit > Project Settings > Preset Manager** with folder-path filters. They are not auto-applied by the package itself.
-- **Editor utilities**: Available at **Window > Best Practices** in the Unity menu bar.
-- **Folder scaffold**: `EditorController.cs` — menu item "Setup Project Folders" — creates `_Project/{Art,Audio,Prefabs,Scripts,Scenes,Settings,UI}` in the host project.
+- Run `./setup-project.sh --project <scratch-project-path> --editor-version <ver>` and check the exit
+  code, or drive the same steps via the `unity-project-setup` skill.
+- **Script templates**: take effect only after restarting the Unity Editor in the target project —
+  templates are registered at startup, and this is unrelated to whether this repo is a package.
+- **Import presets**: registered programmatically by `SetupScripts/Editor/ConfigurePresets.cs` when
+  the pipeline runs; review them afterwards in **Edit > Project Settings > Preset Manager**.
+- **Folder scaffold**: `SetupScripts/Editor/SetupProjectFolders.cs`, invoked as part of
+  `BestPracticesSetup.Run()` — creates `Assets/{ProjectName}/{Art,Audio,Prefabs,Scripts,Scenes,
+  Settings,UI}` in the target project.
 
 ## Architecture
 
-### Runtime vs Editor split
-`Runtime/` contains only things needed at runtime (e.g. `CodeStyleGuide.cs` as a reference class). `Editor/` contains everything that should be stripped from builds: utilities, presets, script templates, and all LLM instruction files.
+Three categories of content, by lifetime:
 
-### LLM instruction files (`Editor/LLMInstructions/`)
-The primary product of this package. Two consumption patterns:
-1. **Individual files** — reference specific files in AI tool config (e.g. `CLAUDE.md`, `.github/copilot-instructions.md`) for targeted guidance.
-2. **`copilot-instructions.md`** — a single consolidated file (~1400 lines) that merges all instruction topics. Use this when you need everything in one place.
+| Category | Contents | Lifetime in the target project |
+|---|---|---|
+| **Temporary** | `SetupScripts/Editor/*.cs` — the orchestrator and every setup step | Staged into `Assets/_BestPracticesSetup/`, run once via `unity run -- -executeMethod`, then deleted. Zero residue. |
+| **Permanent** | `Presets/`, `ScriptTemplates/` | Copied into `Assets/Settings/Presets/` and `Assets/ScriptTemplates/` and left there — Unity resolves `Preset` references by GUID and discovers templates by filename, so these must persist. |
+| **Agent fallback** | `skills/unity-project-setup/SKILL.md` | Not copied anywhere — lives in this repo and is loaded directly by an agent when driving setup interactively (e.g. against an already-open live Editor) instead of running `setup-project.sh`. |
 
-The other files are not duplicates of each other — each covers a distinct domain:
+`Samples/` is a fourth, opt-in category: example code copied into
+`Assets/{ProjectName}/Scripts/Samples/{name}/` only when requested via `--samples`.
 
-| File | Domain |
-|---|---|
-| `UnityCodeStyleInstructions.md` | Naming, formatting, class organisation |
-| `UnityPerformanceOptimizationInstructions.md` | Allocation avoidance, caching, hot-path patterns |
-| `UnityDesignPatternsInstructions.md` | SOLID, Observer, State, Object Pool, Service Locator |
-| `UnityDebuggingInstructions.md` | Triage order, per-system debugging strategies |
-| `UnityUIToolkitInstructions.md` | USS/UXML, BEM naming, data binding, MVP pattern |
-| `UnityProjectConfigurationInstructions.md` | Preset Manager, Enter Play Mode settings, Burst |
-| `DocumentationTemplate.md` | README structure and tone guide |
-| `GameDesignDocument.md` | Full GDD template |
-| `custom-packages.md` | Package manifest conventions |
+### The pipeline (`setup-project.sh`)
 
-### Script templates (`Editor/ScriptTemplates/`)
-File naming follows Unity's convention: `{priority}-{menu path}-{default filename}.cs.txt`. Menu separators use `__` and item separators use `_`. The UI Toolkit View template depends on `UITKBaseClass` from a `Core.UI` namespace — that base class must exist in the host project.
+Bash script that: stages `SetupScripts/Editor/*.cs` and a `setup-config.json` into the target
+project, copies `Presets/`/`ScriptTemplates/` in, clones `unity-code-style-guide` (unless skipped),
+runs `unity run <project> -- -executeMethod BestPractices.Setup.BestPracticesSetup.Run`, copies
+selected samples, then deletes the staged scripts. Requires the target project's Editor to be
+**closed** (`unity run` needs the batch-mode lock) — `skills/unity-project-setup/SKILL.md` is the
+counterpart for a live-Editor session, and the two must be kept in lockstep.
 
-## C# conventions enforced by this package
+### `BestPracticesSetup.Run()` step order
 
-These apply to all `.cs` files in this repo and in host projects using the LLM instructions.
+`SetupProjectFolders` → `GenerateAssemblyDefinitions` → `ConfigurePresets.ApplyAllPresets` →
+`SetupTagsAndLayers` → `GenerateGitIgnore` → `GenerateGitAttributes` → `GenerateEditorConfig` →
+`ConfigureProjectSettings.ApplySettings` → `ConfigureIterationSettings` (script changes / async
+shaders / managed stripping) → `ConfigureAssetPipeline` (auto refresh / import workers / texture
+compression) → optionally `FixVSCodeSlnx`. Every step reads `SetupConfig` (parsed from
+`setup-config.json`) rather than taking `-executeMethod` arguments directly, since Unity's
+`-executeMethod` has no argument-passing convention that survives a list value (`samples`) cleanly
+through shell → CLI → Unity argv.
+
+### Script templates (`ScriptTemplates/`)
+File naming follows Unity's convention: `{priority}-{menu path}-{default filename}.cs.txt`. Menu
+separators use `__` and item separators use `_`. Must land at the target project's
+`Assets/ScriptTemplates/` exactly (not nested under `Assets/Editor/`) — this is a Unity requirement,
+unrelated to package status. The UI Toolkit View template depends on `UITKBaseClass` from a
+`Core.UI` namespace — that base class must exist in the target project.
+
+## C# conventions enforced by this toolkit
+
+These apply to every `.cs` file in this repo, and are what the setup pipeline's generated
+`.editorconfig` enforces in target projects.
 
 **Field prefixes**
 - `m_` — private instance fields
@@ -73,10 +96,17 @@ These apply to all `.cs` files in this repo and in host projects using the LLM i
 
 ## Adding new content
 
-- **New LLM instruction file**: create in `Editor/LLMInstructions/`, add a `.meta` file with `DefaultImporter` block and a unique GUID (generate with `python3 -c "import uuid; print(uuid.uuid4().hex)"`), and update `copilot-instructions.md` to include the content.
-- **New preset**: add `.preset` file under `Editor/Presets/{category}/` with a matching `.meta` file; document it in `Editor/Presets/readme.md`.
-- **New script template**: follow the `{priority}-{menu}__{submenu}-{filename}.cs.txt` naming pattern; update `Editor/ScriptTemplates/readme.md`.
-- **Version bump**: after adding new functionality, propose a version bump (see rule below) and update both `package.json` and `CHANGELOG.md` once confirmed.
+- **New setup step**: add a static class under `SetupScripts/Editor/`, no `[MenuItem]` (there is no
+  menu — everything runs headlessly), and call it from `BestPracticesSetup.Run()` in the right order.
+  Add any new config it needs to `SetupConfig`.
+- **New preset**: add a `.preset` file (with its `.meta`) under `Presets/{category}/`; register it in
+  `ConfigurePresets.cs`; document it in `Presets/readme.md`.
+- **New script template**: follow the `{priority}-{menu}__{submenu}-{filename}.cs.txt` naming
+  pattern; update `ScriptTemplates/readme.md`.
+- **New sample**: add a folder under `Samples/`; list it in `setup-project.sh`'s `--samples` help
+  text and `readme.md`.
+- **Version bump**: after adding new functionality, propose a version bump (see rule below) and
+  update both `toolkit.json` and `CHANGELOG.md` once confirmed.
 
 ## Versioning rule
 
@@ -86,15 +116,19 @@ After completing any work that adds new functionality, fixes a bug, or changes b
 - `MINOR` — only when the user explicitly requests a minor bump (e.g. `1.4.x` → `1.5.0`)
 - `MAJOR` — breaking change (renamed package ID, removed API, restructured assembly)
 
-**Do not update `package.json` or `CHANGELOG.md` until the user confirms the proposed version.**
+**Do not update `toolkit.json` or `CHANGELOG.md` until the user confirms the proposed version.**
 
 Once confirmed:
-1. Update the `"version"` field in `package.json`.
+1. Update the `"version"` field in `toolkit.json`.
 2. Add a new entry at the top of `CHANGELOG.md` following the existing format.
 
 ## Meta files
 
-Every file Unity tracks requires a `.meta` sibling. When creating files manually:
-- Use `DefaultImporter` for plain text/markdown files
+This repo is not Unity-project-shaped, so almost nothing in it needs a `.meta` sibling. The
+exception is `Presets/**/*.preset` and `ScriptTemplates/*.cs.txt` — both are read by Unity as real
+assets once copied into a target project's `Assets/`, and preserving their `.meta` avoids GUID
+churn across toolkit versions. When adding a new preset or template:
+- Use `DefaultImporter` for the `.meta` (or `NativeFormatImporter` for `.preset` — check an existing
+  sibling file for the exact importer block).
 - Empty YAML values must have a trailing space: `userData: ` not `userData:`
 - Generate GUIDs with `python3 -c "import uuid; print(uuid.uuid4().hex)"`
