@@ -5,16 +5,22 @@ using System.IO;
 namespace BestPractices.Setup
 {
     /// <summary>
-    /// Creates an <c>.editorconfig</c> file at the project root that matches the toolkit's C# style guide.
-    /// Called by <see cref="BestPracticesSetup"/> as part of the setup pipeline.
+    /// Creates an <c>.editorconfig</c> file at the project root that matches the style guide.
+    /// The canonical source of the config lives in the cloned
+    /// <c>unity-code-style-guide</c> fork (<c>AgentsInstructions/CodeStyleGuide/EditorConfig/.editorconfig</c>);
+    /// this step copies it so the setup result and the style guide can never drift apart.
     /// </summary>
     /// <remarks>
-    /// The generated config enforces naming conventions, formatting rules, and code style
-    /// preferences that align with the Best Practices C# coding standard. IDEs such as
-    /// Rider, Visual Studio, and VS Code will automatically pick up and enforce these rules.
+    /// When the style guide was cloned (the default), the file is copied verbatim.
+    /// If the project was set up with <c>--skip-style-guide</c> (or the clone is missing/incomplete),
+    /// falls back to an embedded copy of the current style-guide config.
+    /// Called by <see cref="BestPracticesSetup"/> as part of the setup pipeline.
     /// </remarks>
     public static class GenerateEditorConfig
     {
+        private const string GuideEditorConfigRelativePath =
+            "AI/unity-code-style-guide/AgentsInstructions/CodeStyleGuide/EditorConfig/.editorconfig";
+
         /// <summary>
         /// Creates the <c>.editorconfig</c> file at the Unity project root.
         /// Skips (does not overwrite) if the file already exists — this runs headlessly via
@@ -31,102 +37,158 @@ namespace BestPractices.Setup
                 return;
             }
 
-            string content = @"# EditorConfig — Unity Best Practices
-# https://editorconfig.org
+            string guidePath = Path.Combine(projectRoot, GuideEditorConfigRelativePath);
+            if (File.Exists(guidePath))
+            {
+                File.Copy(guidePath, editorConfigPath);
+                Debug.Log($"[BestPractice] .editorconfig copied from {GuideEditorConfigRelativePath}.");
+                return;
+            }
+
+            Debug.LogWarning($"[BestPractice] Style-guide .editorconfig not found at '{GuideEditorConfigRelativePath}' " +
+                             "(was the style guide cloned? --skip-style-guide uses the embedded copy). Using embedded fallback.");
+            File.WriteAllText(editorConfigPath, EditorConfigContent);
+            Debug.Log($"[BestPractice] .editorconfig created at: {editorConfigPath} (embedded fallback)");
+        }
+
+        // Embedded fallback for --skip-style-guide projects. Keep in sync with
+        // AgentsInstructions/CodeStyleGuide/EditorConfig/.editorconfig in the unity-code-style-guide fork.
+        private const string EditorConfigContent = @"# .editorconfig
+# Enforce the forked unity-code-style-guide standard: Unity C# with the
+# .NET Runtime team naming conventions. IDEs pick this up automatically.
 root = true
 
 [*]
-indent_style = space
-indent_size = 4
-end_of_line = lf
 charset = utf-8
-trim_trailing_whitespace = true
+end_of_line = lf
 insert_final_newline = true
-max_line_length = 120
+trim_trailing_whitespace = true
+max_line_length = 140
+
+# Binary and generated assets - don't rewrite these
+[*.{png,jpg,jpeg,gif,ico,exe,dll,so,zip}]
+trim_trailing_whitespace = false
+insert_final_newline = false
+
+# Unity YAML assets - preserve exactly as Unity writes them
+[*.{unity,scenetemplate,asset,prefab,mat,anim,controller,overrideController,preset,meta,renderTexture,lighting,mixer,playable,terrainlayer}]
+trim_trailing_whitespace = false
+insert_final_newline = false
 
 [*.cs]
-# ── Naming conventions ────────────────────────────────────────────────────────
-# Shared styles
-dotnet_naming_style.pascal_case.capitalization             = pascal_case
-dotnet_naming_style.camel_case.capitalization              = camel_case
+indent_style = space
+indent_size = 4
 
-# Private instance fields: m_camelCase  (e.g. m_health, m_isActive)
-dotnet_naming_rule.private_instance_fields.symbols         = private_instance_fields
-dotnet_naming_rule.private_instance_fields.style           = m_prefix
-dotnet_naming_rule.private_instance_fields.severity        = suggestion
-dotnet_naming_symbols.private_instance_fields.applicable_kinds          = field
-dotnet_naming_symbols.private_instance_fields.applicable_accessibilities = private, protected
-dotnet_naming_style.m_prefix.capitalization                = camel_case
-dotnet_naming_style.m_prefix.required_prefix               = m_
+# Allman brace style
+csharp_new_line_before_open_brace = all
+csharp_new_line_before_else = true
+csharp_new_line_before_catch = true
+csharp_new_line_before_finally = true
 
-# Private static fields: s_camelCase  (e.g. s_sharedCount, s_instance)
-dotnet_naming_rule.private_static_fields.symbols           = private_static_fields
-dotnet_naming_rule.private_static_fields.style             = s_prefix
-dotnet_naming_rule.private_static_fields.severity          = suggestion
-dotnet_naming_symbols.private_static_fields.applicable_kinds            = field
-dotnet_naming_symbols.private_static_fields.applicable_accessibilities  = private, protected
-dotnet_naming_symbols.private_static_fields.required_modifiers          = static
-dotnet_naming_style.s_prefix.capitalization                = camel_case
-dotnet_naming_style.s_prefix.required_prefix               = s_
+# Spacing rules
+csharp_space_after_keywords_in_control_flow_statements = true
+csharp_space_between_method_call_name_and_open_parenthesis = false
+csharp_space_between_method_declaration_name_and_open_parenthesis = false
+csharp_space_after_comma = true
+csharp_space_around_binary_operators = before_and_after
+csharp_space_within_square_brackets = false
 
-# Constants: k_camelCase  (e.g. k_maxCount, k_defaultSpeed)
+# var preferences — explicit types unless the type is apparent from the right side
+csharp_style_var_for_built_in_types = true:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_elsewhere = true:suggestion
+
+# Expression-bodied members when a single line fits
+csharp_style_expression_bodied_methods = when_on_single_line:suggestion
+csharp_style_expression_bodied_properties = when_on_single_line:suggestion
+
+# ── Naming conventions — .NET Runtime team coding style ───────────────────────
+# public/protected/protected_internal fields (any modifier) → PascalCase
+# constants (any accessibility; const implies static)   → PascalCase
+# private/internal static fields (incl. static readonly) → s_camelCase
+# private/internal instance fields                       → _camelCase
+# Roslyn selects rules by specificity (const,static > static > none),
+# so every field deterministically matches its most specific rule.
+dotnet_diagnostic.IDE1006.severity = warning
+
+dotnet_naming_style.pascal_case.capitalization           = pascal_case
+dotnet_naming_style.camel_case.capitalization            = camel_case
+dotnet_naming_style.s_camel_case.capitalization          = camel_case
+dotnet_naming_style.s_camel_case.required_prefix         = s_
+dotnet_naming_style.underscore_camel_case.capitalization = camel_case
+dotnet_naming_style.underscore_camel_case.required_prefix = _
+dotnet_naming_style.i_prefix.capitalization              = pascal_case
+dotnet_naming_style.i_prefix.required_prefix             = I
+
+# Constants at any accessibility: PascalCase (const is implicitly static)
 dotnet_naming_rule.constants.symbols                       = constants
-dotnet_naming_rule.constants.style                         = k_prefix
-dotnet_naming_rule.constants.severity                      = suggestion
+dotnet_naming_rule.constants.style                         = pascal_case
+dotnet_naming_rule.constants.severity                      = warning
 dotnet_naming_symbols.constants.applicable_kinds           = field
-dotnet_naming_symbols.constants.required_modifiers         = const
-dotnet_naming_style.k_prefix.capitalization                = camel_case
-dotnet_naming_style.k_prefix.required_prefix               = k_
+dotnet_naming_symbols.constants.applicable_accessibilities = public, internal, private, protected, protected_internal, private_protected
+dotnet_naming_symbols.constants.required_modifiers         = const, static
+
+# Non-public static fields: s_camelCase
+dotnet_naming_rule.non_public_static_fields.symbols         = non_public_static_fields
+dotnet_naming_rule.non_public_static_fields.style           = s_camel_case
+dotnet_naming_rule.non_public_static_fields.severity        = warning
+dotnet_naming_symbols.non_public_static_fields.applicable_kinds          = field
+dotnet_naming_symbols.non_public_static_fields.applicable_accessibilities = private, internal, private_protected
+dotnet_naming_symbols.non_public_static_fields.required_modifiers        = static
+
+# Non-public instance fields: _camelCase
+dotnet_naming_rule.non_public_instance_fields.symbols       = non_public_instance_fields
+dotnet_naming_rule.non_public_instance_fields.style         = underscore_camel_case
+dotnet_naming_rule.non_public_instance_fields.severity      = warning
+dotnet_naming_symbols.non_public_instance_fields.applicable_kinds          = field
+dotnet_naming_symbols.non_public_instance_fields.applicable_accessibilities = private, internal, private_protected
+
+# Public and protected fields (any modifier): PascalCase
+dotnet_naming_rule.public_protected_fields.symbols          = public_protected_fields
+dotnet_naming_rule.public_protected_fields.style            = pascal_case
+dotnet_naming_rule.public_protected_fields.severity         = warning
+dotnet_naming_symbols.public_protected_fields.applicable_kinds           = field
+dotnet_naming_symbols.public_protected_fields.applicable_accessibilities = public, protected, protected_internal
 
 # Properties and methods: PascalCase
-dotnet_naming_rule.properties.symbols                      = properties
-dotnet_naming_rule.properties.style                        = pascal_case
-dotnet_naming_rule.properties.severity                     = suggestion
-dotnet_naming_symbols.properties.applicable_kinds          = property
+dotnet_naming_rule.properties.symbols                       = properties
+dotnet_naming_rule.properties.style                         = pascal_case
+dotnet_naming_rule.properties.severity                      = warning
+dotnet_naming_symbols.properties.applicable_kinds           = property
 
-dotnet_naming_rule.methods.symbols                         = methods
-dotnet_naming_rule.methods.style                           = pascal_case
-dotnet_naming_rule.methods.severity                        = suggestion
-dotnet_naming_symbols.methods.applicable_kinds             = method
+dotnet_naming_rule.methods.symbols                          = methods
+dotnet_naming_rule.methods.style                            = pascal_case
+dotnet_naming_rule.methods.severity                         = warning
+dotnet_naming_symbols.methods.applicable_kinds              = method
 
-# ── Formatting (Allman style) ─────────────────────────────────────────────────
-csharp_new_line_before_open_brace                          = all
-csharp_new_line_before_else                                = true
-csharp_new_line_before_catch                               = true
-csharp_new_line_before_finally                             = true
-csharp_indent_case_contents                                = true
-csharp_indent_switch_labels                                = true
+# Interfaces: IPascalCase
+dotnet_naming_rule.interfaces.symbols                       = interfaces
+dotnet_naming_rule.interfaces.style                         = i_prefix
+dotnet_naming_rule.interfaces.severity                      = warning
+dotnet_naming_symbols.interfaces.applicable_kinds           = interface
 
-# Spaces
-csharp_space_after_cast                                    = false
-csharp_space_after_keywords_in_control_flow_statements     = true
-csharp_space_between_parentheses                           = false
-csharp_space_before_colon_in_inheritance_clause            = true
-csharp_space_after_colon_in_inheritance_clause             = true
-csharp_space_around_binary_operators                       = before_and_after
+# Local constants: PascalCase
+dotnet_naming_rule.local_constants.symbols                  = local_constants
+dotnet_naming_rule.local_constants.style                    = pascal_case
+dotnet_naming_rule.local_constants.severity                 = warning
+dotnet_naming_symbols.local_constants.applicable_kinds      = local
+dotnet_naming_symbols.local_constants.required_modifiers    = const
 
-# ── Using directives ──────────────────────────────────────────────────────────
-csharp_using_directive_placement                           = outside_namespace
-dotnet_sort_system_directives_first                        = true
-dotnet_separate_import_directive_groups                    = true
+# UXML / XML files (UI Toolkit)
+[*.uxml]
+indent_style = space
+indent_size = 2
+max_line_length = 120
 
-# ── Expression preferences ────────────────────────────────────────────────────
-csharp_prefer_braces                                       = true:suggestion
-csharp_style_var_for_built_in_types                        = false:suggestion
-csharp_style_var_when_type_is_apparent                     = true:suggestion
-csharp_style_expression_bodied_methods                     = false:suggestion
-csharp_style_expression_bodied_constructors                = false:suggestion
-
-[*.{xml,json,yaml,yml,asmdef,asmref}]
+[*.xml]
+indent_style = space
 indent_size = 2
 
-[*.md]
-trim_trailing_whitespace = false
+# USS / CSS-like files
+[*.{uss,tss}]
+indent_style = space
+indent_size = 2
+max_line_length = 120
 ";
-
-            File.WriteAllText(editorConfigPath, content);
-            Debug.Log($"[BestPractice] .editorconfig created at: {editorConfigPath}");
-        }
     }
 }
-

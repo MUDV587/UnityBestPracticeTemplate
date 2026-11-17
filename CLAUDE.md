@@ -73,18 +73,22 @@ unrelated to package status. The UI Toolkit View template depends on `UITKBaseCl
 These apply to every `.cs` file in this repo, and are what the setup pipeline's generated
 `.editorconfig` enforces in target projects.
 
-**Field prefixes**
-- `m_` — private instance fields
-- `s_` — static fields
-- `k_` — constants
+**Field naming** (.NET Runtime team coding style — also what the cloned `unity-code-style-guide` enforces)
+- `_camelCase` — private/internal instance fields
+- `s_camelCase` — private/internal static fields (including static readonly)
+- PascalCase — constants at any accessibility (`const` is implicitly static)
+- PascalCase — public/protected/protected_internal fields (any modifier)
+- By convention only (not enforceable via .editorconfig): `[ThreadStatic]` fields use `t_`
 
 **Class member order**
-1. Using statements → namespace → fields → properties → events → MonoBehaviour methods (Awake, OnEnable, Start, OnDisable, Update order) → public methods → private methods
+1. Using statements → namespace → fields → constructors → properties → events → MonoBehaviour methods (Awake, OnEnable, Start, OnDisable, Update order) → public methods → private methods
+2. Within each group: access level public → internal → protected → private, static before instance; fields ordered `const` → `static readonly` → `static` → instance, with `[SerializeField]` first
 
 **Method naming**
 - `ProcessX` — game logic
 - `HandleX` — event callbacks
 - `IsX` / `HasX` / `CanX` — boolean queries
+- `XxxAsync` — Task-returning async methods
 
 **Events**
 - Past-tense names (e.g. `PlayerDied`, `ScoreChanged`)

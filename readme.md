@@ -19,7 +19,7 @@ Requires the [`unity` CLI](https://docs.unity.com/en-us/unity-cli) on your PATH 
 project's Editor **closed** (batch mode needs the lock — see below if it's open).
 
 ```bash
-git clone https://github.com/krogh-jacobsen/UnityBestPracticeTemplate.git
+git clone https://github.com/MUDV587/UnityBestPracticeTemplate.git
 cd UnityBestPracticeTemplate
 ./setup-project.sh --project /path/to/MyGame --editor-version 6000.3.5f1 --samples ObjectPooling,StateMachine
 ```
@@ -29,7 +29,7 @@ This:
    then deletes them — no trace of this toolkit is left behind.
 2. Registers import presets and copies script templates in permanently (both need to persist for
    Unity to keep resolving them).
-3. Clones [`unity-code-style-guide`](https://github.com/krogh-jacobsen/unity-code-style-guide) into
+3. Clones the [`unity-code-style-guide` fork](https://github.com/MUDV587/unity-code-style-guide) into
    `AI/unity-code-style-guide/` and drops pointer files at `CLAUDE.md`, `AGENTS.md`,
    `.github/copilot-instructions.md`, `.cursorrules`, and `.junie/guidelines.md`.
 4. Copies any requested sample code into `Assets/{ProjectName}/Scripts/Samples/`.
@@ -67,7 +67,7 @@ against a live Editor.
 
 ### AI coding-style guide
 
-Sourced live from [`unity-code-style-guide`](https://github.com/krogh-jacobsen/unity-code-style-guide)
+Sourced live from the [`unity-code-style-guide` fork](https://github.com/MUDV587/unity-code-style-guide)
 rather than duplicated here — that repo is the maintained source for `AGENTS.md`, the opinionated
 `UnityStyleGuide.md`, per-domain `UnityReferenceGuides/`, and a `unity-guide-audit` skill that checks
 a project against them. `--skip-style-guide` opts out if you'd rather manage this yourself.

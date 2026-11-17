@@ -12,18 +12,18 @@ namespace UnityBestPractices.Samples.AudioManager
         #region Fields
 
         [Header("Demo Clips — assign in the Inspector")]
-        [SerializeField] private AudioClip m_SFXClip;
-        [SerializeField] private AudioClip m_UISFXClip;
-        [SerializeField] private AudioClip m_MusicClipA;
-        [SerializeField] private AudioClip m_MusicClipB;
-        [SerializeField] private AudioClip m_AmbienceClip;
+        [SerializeField] private AudioClip _sfxClip;
+        [SerializeField] private AudioClip _uISFXClip;
+        [SerializeField] private AudioClip _musicClipA;
+        [SerializeField] private AudioClip _musicClipB;
+        [SerializeField] private AudioClip _ambienceClip;
 
         [Header("Volume Sliders")]
-        [SerializeField] private Slider m_MasterSlider;
-        [SerializeField] private Slider m_MusicSlider;
-        [SerializeField] private Slider m_SFXSlider;
-        [SerializeField] private Slider m_UISlider;
-        [SerializeField] private Slider m_AmbienceSlider;
+        [SerializeField] private Slider _masterSlider;
+        [SerializeField] private Slider _musicSlider;
+        [SerializeField] private Slider _sfxSlider;
+        [SerializeField] private Slider _uISlider;
+        [SerializeField] private Slider _ambienceSlider;
 
         #endregion
 
@@ -32,11 +32,11 @@ namespace UnityBestPractices.Samples.AudioManager
         private void Start()
         {
             // Initialise slider positions from persisted preferences
-            InitSlider(m_MasterSlider, AudioChannel.SFX, onChanged: null, masterParam: true);
-            InitSlider(m_MusicSlider, AudioChannel.Music, OnMusicVolumeChanged);
-            InitSlider(m_SFXSlider, AudioChannel.SFX, OnSFXVolumeChanged);
-            InitSlider(m_UISlider, AudioChannel.UI, OnUIVolumeChanged);
-            InitSlider(m_AmbienceSlider, AudioChannel.Ambience, OnAmbienceVolumeChanged);
+            InitSlider(_masterSlider, AudioChannel.SFX, onChanged: null, masterParam: true);
+            InitSlider(_musicSlider, AudioChannel.Music, OnMusicVolumeChanged);
+            InitSlider(_sfxSlider, AudioChannel.SFX, OnSfxVolumeChanged);
+            InitSlider(_uISlider, AudioChannel.UI, OnUIVolumeChanged);
+            InitSlider(_ambienceSlider, AudioChannel.Ambience, OnAmbienceVolumeChanged);
         }
 
         #endregion
@@ -46,25 +46,25 @@ namespace UnityBestPractices.Samples.AudioManager
         public void OnPlaySFXButton()
         {
             if (AudioManager.Instance == null) { WarnNoManager(); return; }
-            AudioManager.Instance.PlaySFX(m_SFXClip, Camera.main != null ? Camera.main.transform.position : Vector3.zero);
+            AudioManager.Instance.PlaySFX(_sfxClip, Camera.main != null ? Camera.main.transform.position : Vector3.zero);
         }
 
         public void OnPlayUIButton()
         {
             if (AudioManager.Instance == null) { WarnNoManager(); return; }
-            AudioManager.Instance.PlayUI(m_UISFXClip);
+            AudioManager.Instance.PlayUI(_uISFXClip);
         }
 
         public void OnPlayMusicAButton()
         {
             if (AudioManager.Instance == null) { WarnNoManager(); return; }
-            AudioManager.Instance.PlayMusic(m_MusicClipA);
+            AudioManager.Instance.PlayMusic(_musicClipA);
         }
 
         public void OnCrossfadeToMusicBButton()
         {
             if (AudioManager.Instance == null) { WarnNoManager(); return; }
-            AudioManager.Instance.CrossfadeMusic(m_MusicClipB);
+            AudioManager.Instance.CrossfadeMusic(_musicClipB);
         }
 
         public void OnStopMusicButton()
@@ -76,7 +76,7 @@ namespace UnityBestPractices.Samples.AudioManager
         public void OnPlayAmbienceButton()
         {
             if (AudioManager.Instance == null) { WarnNoManager(); return; }
-            AudioManager.Instance.PlayAmbience(m_AmbienceClip);
+            AudioManager.Instance.PlayAmbience(_ambienceClip);
         }
 
         public void OnStopAmbienceButton()
@@ -94,7 +94,7 @@ namespace UnityBestPractices.Samples.AudioManager
             AudioManager.Instance?.SetVolume(AudioChannel.Music, value);
         }
 
-        private void OnSFXVolumeChanged(float value)
+        private void OnSfxVolumeChanged(float value)
         {
             AudioManager.Instance?.SetVolume(AudioChannel.SFX, value);
         }

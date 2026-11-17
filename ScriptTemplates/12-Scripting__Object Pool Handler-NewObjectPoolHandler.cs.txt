@@ -6,17 +6,17 @@ public class #SCRIPTNAME# : MonoBehaviour
 {
     #region Fields
 
-    [SerializeField] private GameObject m_Prefab;
-    [SerializeField] private int m_DefaultCapacity = 10;
-    [SerializeField] private int m_MaxSize = 100;
+    [SerializeField] private GameObject _prefab;
+    [SerializeField] private int _defaultCapacity = 10;
+    [SerializeField] private int _maxSize = 100;
 
-    private ObjectPool<GameObject> m_Pool;
+    private ObjectPool<GameObject> _pool;
 
     #endregion
 
     #region Properties
 
-    public ObjectPool<GameObject> Pool => m_Pool;
+    public ObjectPool<GameObject> Pool => _pool;
 
     #endregion
 
@@ -24,14 +24,14 @@ public class #SCRIPTNAME# : MonoBehaviour
 
     private void Awake()
     {
-        m_Pool = new ObjectPool<GameObject>(
+        _pool = new ObjectPool<GameObject>(
             createFunc: CreatePooledItem,
             actionOnGet: OnTakeFromPool,
             actionOnRelease: OnReturnedToPool,
             actionOnDestroy: OnDestroyPoolObject,
             collectionCheck: false,
-            defaultCapacity: m_DefaultCapacity,
-            maxSize: m_MaxSize);
+            defaultCapacity: _defaultCapacity,
+            maxSize: _maxSize);
     }
 
     #endregion
@@ -40,7 +40,7 @@ public class #SCRIPTNAME# : MonoBehaviour
 
     private GameObject CreatePooledItem()
     {
-        return Instantiate(m_Prefab);
+        return Instantiate(_prefab);
     }
 
     private void OnTakeFromPool(GameObject obj)

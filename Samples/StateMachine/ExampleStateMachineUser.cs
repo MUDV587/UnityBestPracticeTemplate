@@ -10,9 +10,9 @@ namespace UnityBestPractices.Samples
     {
         #region Fields
 
-        private StateMachine m_StateMachine;
-        private IdleState m_IdleState;
-        private MovingState m_MovingState;
+        private StateMachine _stateMachine;
+        private IdleState _idleState;
+        private MovingState _movingState;
 
         #endregion
 
@@ -20,19 +20,19 @@ namespace UnityBestPractices.Samples
 
         private void Awake()
         {
-            m_StateMachine = new StateMachine();
-            m_IdleState = new IdleState(this);
-            m_MovingState = new MovingState(this);
+            _stateMachine = new StateMachine();
+            _idleState = new IdleState(this);
+            _movingState = new MovingState(this);
         }
 
         private void Start()
         {
-            m_StateMachine.ChangeState(m_IdleState);
+            _stateMachine.ChangeState(_idleState);
         }
 
         private void Update()
         {
-            m_StateMachine.Update();
+            _stateMachine.Update();
 
             if (Input.GetKeyDown(KeyCode.Space))
             {
@@ -46,13 +46,13 @@ namespace UnityBestPractices.Samples
 
         private void ToggleState()
         {
-            if (m_StateMachine.CurrentState == m_IdleState)
+            if (_stateMachine.CurrentState == _idleState)
             {
-                m_StateMachine.ChangeState(m_MovingState);
+                _stateMachine.ChangeState(_movingState);
             }
             else
             {
-                m_StateMachine.ChangeState(m_IdleState);
+                _stateMachine.ChangeState(_idleState);
             }
         }
 
@@ -62,9 +62,9 @@ namespace UnityBestPractices.Samples
 
         private class IdleState : IState
         {
-            private readonly ExampleStateMachineUser m_Owner;
+            private readonly ExampleStateMachineUser _owner;
 
-            public IdleState(ExampleStateMachineUser owner) => m_Owner = owner;
+            public IdleState(ExampleStateMachineUser owner) => _owner = owner;
 
             public void OnEnter() => Debug.Log("Entered Idle");
             public void OnUpdate() { }
@@ -73,15 +73,15 @@ namespace UnityBestPractices.Samples
 
         private class MovingState : IState
         {
-            private readonly ExampleStateMachineUser m_Owner;
+            private readonly ExampleStateMachineUser _owner;
 
-            public MovingState(ExampleStateMachineUser owner) => m_Owner = owner;
+            public MovingState(ExampleStateMachineUser owner) => _owner = owner;
 
             public void OnEnter() => Debug.Log("Entered Moving");
 
             public void OnUpdate()
             {
-                m_Owner.transform.Translate(Vector3.forward * Time.deltaTime);
+                _owner.transform.Translate(Vector3.forward * Time.deltaTime);
             }
 
             public void OnExit() => Debug.Log("Exited Moving");

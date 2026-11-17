@@ -40,7 +40,7 @@ namespace Core.UI
 
         protected override void InitializeElements()
         {
-            // Query and cache UI elements from m_rootVisualElement
+            // Query and cache UI elements from _rootVisualElement
             #NOTRIM#
         }
 

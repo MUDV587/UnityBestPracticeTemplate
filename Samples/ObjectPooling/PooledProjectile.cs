@@ -10,10 +10,10 @@ namespace UnityBestPractices.Samples
     {
         #region Fields
 
-        [SerializeField] private float m_Speed = 10f;
-        [SerializeField] private float m_Lifetime = 3f;
+        [SerializeField] private float _speed = 10f;
+        [SerializeField] private float _lifetime = 3f;
 
-        private PooledSpawner m_Spawner;
+        private PooledSpawner _spawner;
 
         #endregion
 
@@ -21,7 +21,7 @@ namespace UnityBestPractices.Samples
 
         public void Initialize(PooledSpawner spawner)
         {
-            m_Spawner = spawner;
+            _spawner = spawner;
             ReturnAfterDelay();
         }
 
@@ -31,7 +31,7 @@ namespace UnityBestPractices.Samples
 
         private void Update()
         {
-            transform.Translate(Vector3.forward * (m_Speed * Time.deltaTime));
+            transform.Translate(Vector3.forward * (_speed * Time.deltaTime));
         }
 
         #endregion
@@ -40,14 +40,14 @@ namespace UnityBestPractices.Samples
 
         private async void ReturnAfterDelay()
         {
-            await Awaitable.WaitForSecondsAsync(m_Lifetime);
+            await Awaitable.WaitForSecondsAsync(_lifetime);
 
-            if (this == null || m_Spawner == null)
+            if (this == null || _spawner == null)
             {
                 return;
             }
 
-            m_Spawner.ReturnToPool(this);
+            _spawner.ReturnToPool(this);
         }
 
         #endregion

@@ -10,19 +10,19 @@ namespace UnityBestPractices.Samples
     {
         #region Fields
 
-        [SerializeField] private PooledProjectile m_ProjectilePrefab;
-        [SerializeField] private float m_SpawnInterval = 1f;
-        [SerializeField] private int m_DefaultCapacity = 10;
-        [SerializeField] private int m_MaxSize = 50;
+        [SerializeField] private PooledProjectile _projectilePrefab;
+        [SerializeField] private float _spawnInterval = 1f;
+        [SerializeField] private int _defaultCapacity = 10;
+        [SerializeField] private int _maxSize = 50;
 
-        private ObjectPool<PooledProjectile> m_Pool;
-        private float m_Timer;
+        private ObjectPool<PooledProjectile> _pool;
+        private float _timer;
 
         #endregion
 
         #region Properties
 
-        public ObjectPool<PooledProjectile> Pool => m_Pool;
+        public ObjectPool<PooledProjectile> Pool => _pool;
 
         #endregion
 
@@ -30,23 +30,23 @@ namespace UnityBestPractices.Samples
 
         private void Awake()
         {
-            m_Pool = new ObjectPool<PooledProjectile>(
+            _pool = new ObjectPool<PooledProjectile>(
                 createFunc: CreateProjectile,
                 actionOnGet: OnTakeFromPool,
                 actionOnRelease: OnReturnedToPool,
                 actionOnDestroy: OnDestroyProjectile,
                 collectionCheck: false,
-                defaultCapacity: m_DefaultCapacity,
-                maxSize: m_MaxSize);
+                defaultCapacity: _defaultCapacity,
+                maxSize: _maxSize);
         }
 
         private void Update()
         {
-            m_Timer += Time.deltaTime;
+            _timer += Time.deltaTime;
 
-            if (m_Timer >= m_SpawnInterval)
+            if (_timer >= _spawnInterval)
             {
-                m_Timer = 0f;
+                _timer = 0f;
                 SpawnProjectile();
             }
         }
@@ -57,7 +57,7 @@ namespace UnityBestPractices.Samples
 
         public void ReturnToPool(PooledProjectile projectile)
         {
-            m_Pool.Release(projectile);
+            _pool.Release(projectile);
         }
 
         #endregion
@@ -66,14 +66,14 @@ namespace UnityBestPractices.Samples
 
         private void SpawnProjectile()
         {
-            var projectile = m_Pool.Get();
+            var projectile = _pool.Get();
             projectile.transform.SetPositionAndRotation(transform.position, transform.rotation);
             projectile.Initialize(this);
         }
 
         private PooledProjectile CreateProjectile()
         {
-            return Instantiate(m_ProjectilePrefab);
+            return Instantiate(_projectilePrefab);
         }
 
         private void OnTakeFromPool(PooledProjectile projectile)

@@ -13,11 +13,11 @@ namespace UnityBestPractices.Samples
     {
         #region Fields
 
-        private UIDocument m_Document;
-        private Label m_CountLabel;
-        private Button m_IncrementButton;
+        private UIDocument _document;
+        private Label _countLabel;
+        private Button _incrementButton;
 
-        private SamplePresenter m_Presenter;
+        private SamplePresenter _presenter;
 
         #endregion
 
@@ -31,25 +31,25 @@ namespace UnityBestPractices.Samples
 
         private void Awake()
         {
-            m_Document = GetComponent<UIDocument>();
+            _document = GetComponent<UIDocument>();
         }
 
         private void OnEnable()
         {
-            var root = m_Document.rootVisualElement;
-            m_CountLabel = root.Q<Label>("count-label");
-            m_IncrementButton = root.Q<Button>("increment-button");
+            var root = _document.rootVisualElement;
+            _countLabel = root.Q<Label>("count-label");
+            _incrementButton = root.Q<Button>("increment-button");
 
-            m_IncrementButton.clicked += HandleIncrementClicked;
+            _incrementButton.clicked += HandleIncrementClicked;
 
-            m_Presenter = new SamplePresenter(this);
+            _presenter = new SamplePresenter(this);
         }
 
         private void OnDisable()
         {
-            m_IncrementButton.clicked -= HandleIncrementClicked;
-            m_Presenter?.Dispose();
-            m_Presenter = null;
+            _incrementButton.clicked -= HandleIncrementClicked;
+            _presenter?.Dispose();
+            _presenter = null;
         }
 
         #endregion
@@ -58,9 +58,9 @@ namespace UnityBestPractices.Samples
 
         public void SetCount(int count)
         {
-            if (m_CountLabel != null)
+            if (_countLabel != null)
             {
-                m_CountLabel.text = count.ToString();
+                _countLabel.text = count.ToString();
             }
         }
 

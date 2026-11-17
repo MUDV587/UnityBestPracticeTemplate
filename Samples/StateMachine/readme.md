@@ -6,7 +6,7 @@ Demonstrates a simple, reusable state machine pattern using the `IState` interfa
 
 - `IState` defines the contract: `OnEnter()`, `OnUpdate()`, `OnExit()`
 - `StateMachine` holds the current state, calls `OnExit()` on the old state and `OnEnter()` on the new state during transitions
-- `ExampleStateMachineUser` owns the state machine and concrete states (as nested classes). It calls `m_StateMachine.Update()` from its `Update()` method
+- `ExampleStateMachineUser` owns the state machine and concrete states (as nested classes). It calls `_stateMachine.Update()` from its `Update()` method
 
 ## Setup
 
@@ -17,7 +17,7 @@ Demonstrates a simple, reusable state machine pattern using the `IState` interfa
 ## Extending it
 
 - Create your own state classes implementing `IState`
-- Store them in the owner MonoBehaviour and call `m_StateMachine.ChangeState(myNewState)` when conditions are met
+- Store them in the owner MonoBehaviour and call `_stateMachine.ChangeState(myNewState)` when conditions are met
 - States can reference the owner via a constructor parameter (as shown with `ExampleStateMachineUser owner`)
 
 ## Key takeaways

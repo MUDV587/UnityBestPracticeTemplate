@@ -15,15 +15,15 @@ namespace BestPractices.Setup
         public string[] samples;
         public bool fixVSCodeSlnx;
 
-        private const string k_ConfigPath = "Assets/_BestPracticesSetup/setup-config.json";
+        private const string ConfigPath = "Assets/_BestPracticesSetup/setup-config.json";
 
         /// <summary>Reads and parses <c>setup-config.json</c> from the staged setup folder.</summary>
         public static SetupConfig Load()
         {
-            string fullPath = Path.Combine(Application.dataPath, "..", k_ConfigPath);
+            string fullPath = Path.Combine(Application.dataPath, "..", ConfigPath);
             if (!File.Exists(fullPath))
             {
-                Debug.LogError($"[BestPractice] Setup config not found at {k_ConfigPath}");
+                Debug.LogError($"[BestPractice] Setup config not found at {ConfigPath}");
                 return new SetupConfig();
             }
 

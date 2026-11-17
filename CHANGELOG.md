@@ -5,6 +5,19 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this package adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2026-11-17
+### Changed
+- **Fork baseline** — `main` fast-forwarded to upstream `fc3e580` (`Complete migration from Unity package to CLI/agent-driven toolkit`); this branch tracks the upstream CLI toolkit and preserves it via `scripts/sync-upstream.ps1`
+- **C# naming standard retired `m_`/`s_`/`k_`** — all toolkit code, samples (`Samples/`), script templates, docs, and the generated `.editorconfig` now follow the .NET Runtime team coding style: `_camelCase` for private/internal instance fields, `s_camelCase` for private/internal static fields (including static readonly), PascalCase for constants (any accessibility), PascalCase for public/protected fields, `XxxAsync` for Task-returning async methods
+- **`GenerateEditorConfig.cs`** — now copies `AI/unity-code-style-guide/AgentsInstructions/CodeStyleGuide/EditorConfig/.editorconfig` verbatim (single source of truth, no embedded duplicate); falls back to an embedded copy of the identical content when the style guide is missing (e.g. `--skip-style-guide`)
+- **Style guide source** — the setup pipeline now clones the fork [`MUDV587/unity-code-style-guide`](https://github.com/MUDV587/unity-code-style-guide) instead of upstream; `setup-project.sh` and the `unity-project-setup` skill are updated, and the fork carries the same .NET Runtime naming standard
+- **`FixVSCodeSlnx.cs`** — renamed behaviour to "VS Code solution fix": prefers `.slnx` (Unity 6) and falls back to `.sln` (2022.3 and earlier); class and `fixVSCodeSlnx` config key names unchanged
+- **`Samples/` folder** — renamed from `StarterSystems/` to `Samples/`, matching every reference in `setup-project.sh`, `readme.md`, the skill, and docs (previously the folder name didn't match, so `--samples` silently skipped every sample)
+- **Toolkit code** — private constants renamed `k_Name` → `Name` per the new standard (Unity `SerializedProperty` names like `m_CompressAssetsOnImport` are unaffected)
+
+### Added
+- **`scripts/sync-upstream.ps1`** — one-command upstream sync: fast-forwards local `main` from `upstream/main`, then merges it through `Unity6000` into `Unity2022` (no rebasing; conflict surface is limited to the style-rename files)
+
 ## [2.0.0] - 2026-09-08
 ### Changed
 - **Complete migration from Unity package to CLI/agent-driven toolkit** — no longer installed via `manifest.json`; run `setup-project.sh` (or the `unity-project-setup` skill) against a project instead. Package identity `com.unity.best-practices` retired; `package.json` replaced by `toolkit.json` (plain metadata, not a UPM manifest)

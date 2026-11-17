@@ -11,8 +11,8 @@ namespace UnityBestPractices.Samples
     {
         #region Fields
 
-        [SerializeField] private GameEvent m_Event;
-        [SerializeField] private UnityEvent m_Response;
+        [SerializeField] private GameEvent _event;
+        [SerializeField] private UnityEvent _response;
 
         #endregion
 
@@ -20,17 +20,17 @@ namespace UnityBestPractices.Samples
 
         private void OnEnable()
         {
-            if (m_Event != null)
+            if (_event != null)
             {
-                m_Event.Subscribe(HandleEventRaised);
+                _event.Subscribe(HandleEventRaised);
             }
         }
 
         private void OnDisable()
         {
-            if (m_Event != null)
+            if (_event != null)
             {
-                m_Event.Unsubscribe(HandleEventRaised);
+                _event.Unsubscribe(HandleEventRaised);
             }
         }
 
@@ -40,7 +40,7 @@ namespace UnityBestPractices.Samples
 
         private void HandleEventRaised()
         {
-            m_Response?.Invoke();
+            _response?.Invoke();
         }
 
         #endregion

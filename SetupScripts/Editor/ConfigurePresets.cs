@@ -6,68 +6,68 @@ namespace BestPractices.Setup
 {
     public static class ConfigurePresets
     {
-        private const string k_PresetsPath = "Assets/Settings/Presets";
-        private const string k_PresetManagerAssetPath = "ProjectSettings/PresetManager.asset";
+        private const string PresetsPath = "Assets/Settings/Presets";
+        private const string PresetManagerAssetPath = "ProjectSettings/PresetManager.asset";
 
         // ── Preset asset paths ────────────────────────────────────────────────
 
-        private static readonly string k_AmbiencePath = $"{k_PresetsPath}/Audio/AmbienceAudioImporter.preset";
-        private static readonly string k_MusicPath = $"{k_PresetsPath}/Audio/MusicAudioImporter.preset";
-        private static readonly string k_SFXPath = $"{k_PresetsPath}/Audio/SFXAudioImporter.preset";
-        private static readonly string k_UIAudioPath = $"{k_PresetsPath}/Audio/UIAudioImporter.preset";
+        private static readonly string s_ambiencePath = $"{PresetsPath}/Audio/AmbienceAudioImporter.preset";
+        private static readonly string s_musicPath = $"{PresetsPath}/Audio/MusicAudioImporter.preset";
+        private static readonly string s_sFXPath = $"{PresetsPath}/Audio/SFXAudioImporter.preset";
+        private static readonly string s_uIAudioPath = $"{PresetsPath}/Audio/UIAudioImporter.preset";
 
-        private static readonly string k_UISpritePath = $"{k_PresetsPath}/Textures/UISpriteTextureImporter.preset";
-        private static readonly string k_AlbedoPath = $"{k_PresetsPath}/Textures/AlbedoTextureImporter.preset";
-        private static readonly string k_NormalPath = $"{k_PresetsPath}/Textures/NormalTextureImporter.preset";
-        private static readonly string k_MaskPath = $"{k_PresetsPath}/Textures/MaskTextureImporter.preset";
+        private static readonly string s_uISpritePath = $"{PresetsPath}/Textures/UISpriteTextureImporter.preset";
+        private static readonly string s_albedoPath = $"{PresetsPath}/Textures/AlbedoTextureImporter.preset";
+        private static readonly string s_normalPath = $"{PresetsPath}/Textures/NormalTextureImporter.preset";
+        private static readonly string s_maskPath = $"{PresetsPath}/Textures/MaskTextureImporter.preset";
 
-        private static readonly string k_FBXModelPath = $"{k_PresetsPath}/Models/FBXModelImporter.preset";
-        private static readonly string k_FBXAnimPath = $"{k_PresetsPath}/Animations/FBXAnimationImporter.preset";
+        private static readonly string s_fBXModelPath = $"{PresetsPath}/Models/FBXModelImporter.preset";
+        private static readonly string s_fBXAnimPath = $"{PresetsPath}/Animations/FBXAnimationImporter.preset";
 
         // ── Folder filters ────────────────────────────────────────────────────
 
-        private const string k_AmbienceFilter = "glob:\"Assets/**/Audio/Ambience/**\"";
-        private const string k_MusicFilter = "glob:\"Assets/**/Audio/Music/**\"";
-        private const string k_SFXFilter = "glob:\"Assets/**/Audio/SFX/**\"";
-        private const string k_UIAudioFilter = "glob:\"Assets/**/Audio/UI/**\"";
+        private const string AmbienceFilter = "glob:\"Assets/**/Audio/Ambience/**\"";
+        private const string MusicFilter = "glob:\"Assets/**/Audio/Music/**\"";
+        private const string SFXFilter = "glob:\"Assets/**/Audio/SFX/**\"";
+        private const string UIAudioFilter = "glob:\"Assets/**/Audio/UI/**\"";
 
-        private const string k_UISpriteFilter = "glob:\"Assets/**/Textures/UI/**\"";
-        private const string k_AlbedoFilter = "glob:\"Assets/**/Textures/Environment/Albedo/**\"";
-        private const string k_NormalFilter = "glob:\"Assets/**/Textures/Environment/Normal/**\"";
-        private const string k_MaskFilter = "glob:\"Assets/**/Textures/Environment/Masks/**\"";
+        private const string UISpriteFilter = "glob:\"Assets/**/Textures/UI/**\"";
+        private const string AlbedoFilter = "glob:\"Assets/**/Textures/Environment/Albedo/**\"";
+        private const string NormalFilter = "glob:\"Assets/**/Textures/Environment/Normal/**\"";
+        private const string MaskFilter = "glob:\"Assets/**/Textures/Environment/Masks/**\"";
 
-        private const string k_FBXModelFilter = "glob:\"Assets/**/Art/Models/**\"";
-        private const string k_FBXAnimFilter = "glob:\"Assets/**/Art/Animations/**\"";
+        private const string FBXModelFilter = "glob:\"Assets/**/Art/Models/**\"";
+        private const string FBXAnimFilter = "glob:\"Assets/**/Art/Animations/**\"";
 
         // ── Status checks ────────────────────────────────────────────────────
 
-        public static bool IsAmbienceConfigured => IsPresetRegistered(k_AmbiencePath, k_AmbienceFilter);
-        public static bool IsMusicConfigured => IsPresetRegistered(k_MusicPath, k_MusicFilter);
-        public static bool IsSFXConfigured => IsPresetRegistered(k_SFXPath, k_SFXFilter);
-        public static bool IsUIAudioConfigured => IsPresetRegistered(k_UIAudioPath, k_UIAudioFilter);
+        public static bool IsAmbienceConfigured => IsPresetRegistered(s_ambiencePath, AmbienceFilter);
+        public static bool IsMusicConfigured => IsPresetRegistered(s_musicPath, MusicFilter);
+        public static bool IsSFXConfigured => IsPresetRegistered(s_sFXPath, SFXFilter);
+        public static bool IsUIAudioConfigured => IsPresetRegistered(s_uIAudioPath, UIAudioFilter);
 
-        public static bool IsUISpriteConfigured => IsPresetRegistered(k_UISpritePath, k_UISpriteFilter);
-        public static bool IsAlbedoConfigured => IsPresetRegistered(k_AlbedoPath, k_AlbedoFilter);
-        public static bool IsNormalConfigured => IsPresetRegistered(k_NormalPath, k_NormalFilter);
-        public static bool IsMaskConfigured => IsPresetRegistered(k_MaskPath, k_MaskFilter);
+        public static bool IsUISpriteConfigured => IsPresetRegistered(s_uISpritePath, UISpriteFilter);
+        public static bool IsAlbedoConfigured => IsPresetRegistered(s_albedoPath, AlbedoFilter);
+        public static bool IsNormalConfigured => IsPresetRegistered(s_normalPath, NormalFilter);
+        public static bool IsMaskConfigured => IsPresetRegistered(s_maskPath, MaskFilter);
 
-        public static bool IsFBXModelConfigured => IsPresetRegistered(k_FBXModelPath, k_FBXModelFilter);
-        public static bool IsFBXAnimationConfigured => IsPresetRegistered(k_FBXAnimPath, k_FBXAnimFilter);
+        public static bool IsFBXModelConfigured => IsPresetRegistered(s_fBXModelPath, FBXModelFilter);
+        public static bool IsFBXAnimationConfigured => IsPresetRegistered(s_fBXAnimPath, FBXAnimFilter);
 
         // ── Individual apply methods ──────────────────────────────────────────
 
-        public static void ApplyAmbience() => ApplySingle(k_AmbiencePath, k_AmbienceFilter);
-        public static void ApplyMusic() => ApplySingle(k_MusicPath, k_MusicFilter);
-        public static void ApplySFX() => ApplySingle(k_SFXPath, k_SFXFilter);
-        public static void ApplyUIAudio() => ApplySingle(k_UIAudioPath, k_UIAudioFilter);
+        public static void ApplyAmbience() => ApplySingle(s_ambiencePath, AmbienceFilter);
+        public static void ApplyMusic() => ApplySingle(s_musicPath, MusicFilter);
+        public static void ApplySFX() => ApplySingle(s_sFXPath, SFXFilter);
+        public static void ApplyUIAudio() => ApplySingle(s_uIAudioPath, UIAudioFilter);
 
-        public static void ApplyUISprite() => ApplySingle(k_UISpritePath, k_UISpriteFilter);
-        public static void ApplyAlbedo() => ApplySingle(k_AlbedoPath, k_AlbedoFilter);
-        public static void ApplyNormal() => ApplySingle(k_NormalPath, k_NormalFilter);
-        public static void ApplyMask() => ApplySingle(k_MaskPath, k_MaskFilter);
+        public static void ApplyUISprite() => ApplySingle(s_uISpritePath, UISpriteFilter);
+        public static void ApplyAlbedo() => ApplySingle(s_albedoPath, AlbedoFilter);
+        public static void ApplyNormal() => ApplySingle(s_normalPath, NormalFilter);
+        public static void ApplyMask() => ApplySingle(s_maskPath, MaskFilter);
 
-        public static void ApplyFBXModel() => ApplySingle(k_FBXModelPath, k_FBXModelFilter);
-        public static void ApplyFBXAnimation() => ApplySingle(k_FBXAnimPath, k_FBXAnimFilter);
+        public static void ApplyFBXModel() => ApplySingle(s_fBXModelPath, FBXModelFilter);
+        public static void ApplyFBXAnimation() => ApplySingle(s_fBXAnimPath, FBXAnimFilter);
 
         // ── Bulk apply (used by New Project Wizard RunFullSetup) ──────────────
 
@@ -77,16 +77,16 @@ namespace BestPractices.Setup
                 return;
 
             int addedCount = 0;
-            addedCount += RegisterPreset(defaultList, k_AmbiencePath, k_AmbienceFilter);
-            addedCount += RegisterPreset(defaultList, k_MusicPath, k_MusicFilter);
-            addedCount += RegisterPreset(defaultList, k_SFXPath, k_SFXFilter);
-            addedCount += RegisterPreset(defaultList, k_UIAudioPath, k_UIAudioFilter);
-            addedCount += RegisterPreset(defaultList, k_UISpritePath, k_UISpriteFilter);
-            addedCount += RegisterPreset(defaultList, k_AlbedoPath, k_AlbedoFilter);
-            addedCount += RegisterPreset(defaultList, k_NormalPath, k_NormalFilter);
-            addedCount += RegisterPreset(defaultList, k_MaskPath, k_MaskFilter);
-            addedCount += RegisterPreset(defaultList, k_FBXModelPath, k_FBXModelFilter);
-            addedCount += RegisterPreset(defaultList, k_FBXAnimPath, k_FBXAnimFilter);
+            addedCount += RegisterPreset(defaultList, s_ambiencePath, AmbienceFilter);
+            addedCount += RegisterPreset(defaultList, s_musicPath, MusicFilter);
+            addedCount += RegisterPreset(defaultList, s_sFXPath, SFXFilter);
+            addedCount += RegisterPreset(defaultList, s_uIAudioPath, UIAudioFilter);
+            addedCount += RegisterPreset(defaultList, s_uISpritePath, UISpriteFilter);
+            addedCount += RegisterPreset(defaultList, s_albedoPath, AlbedoFilter);
+            addedCount += RegisterPreset(defaultList, s_normalPath, NormalFilter);
+            addedCount += RegisterPreset(defaultList, s_maskPath, MaskFilter);
+            addedCount += RegisterPreset(defaultList, s_fBXModelPath, FBXModelFilter);
+            addedCount += RegisterPreset(defaultList, s_fBXAnimPath, FBXAnimFilter);
 
             if (addedCount > 0)
             {
@@ -153,10 +153,10 @@ namespace BestPractices.Setup
             pmSO = null;
             defaultList = null;
 
-            UnityEngine.Object[] pmAssets = AssetDatabase.LoadAllAssetsAtPath(k_PresetManagerAssetPath);
+            UnityEngine.Object[] pmAssets = AssetDatabase.LoadAllAssetsAtPath(PresetManagerAssetPath);
             if (pmAssets.Length == 0 || pmAssets[0] == null)
             {
-                Debug.LogWarning($"[Best Practices] Could not load {k_PresetManagerAssetPath}");
+                Debug.LogWarning($"[Best Practices] Could not load {PresetManagerAssetPath}");
                 return false;
             }
 

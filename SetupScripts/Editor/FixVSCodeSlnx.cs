@@ -7,37 +7,38 @@ namespace BestPractices.Setup
 {
     /// <summary>
     /// Fixes "Active document not part of open workspace" errors in VS Code caused by
-    /// Unity 6 generating .slnx solution files that OmniSharp does not support.
+    /// Unity-generated solution files (.slnx on Unity 6, .sln on 2022.3 and earlier)
+    /// that OmniSharp does not support.
     /// </summary>
     /// <remarks>
     /// The fix:
     /// 1. Removes <c>dotnet.preferCSharpExtension</c> from <c>.vscode/settings.json</c>
     ///    (which forced OmniSharp).
-    /// 2. Adds <c>dotnet.defaultSolution</c> pointing to the project's .slnx file so
-    ///    C# Dev Kit knows which solution to load.
+    /// 2. Adds <c>dotnet.defaultSolution</c> pointing to the project's solution file (.slnx preferred,
+    ///    .sln as fallback) so C# Dev Kit knows which solution to load.
     /// 3. Sets <c>dotnet.enableWorkspaceBasedDevelopment</c> to <c>false</c> so C# Dev Kit
     ///    uses the solution file rather than workspace-based discovery.
     /// 4. Adds <c>ms-dotnettools.csdevkit</c> to <c>.vscode/extensions.json</c> so VS Code
-    ///    uses C# Dev Kit, which supports .slnx.
+    ///    uses C# Dev Kit, which supports both .slnx and .sln.
     /// </remarks>
     public static class FixVSCodeSlnx
     {
-        private const string k_CsDevKitId = "ms-dotnettools.csdevkit";
-        private const string k_OmniSharpKey = "dotnet.preferCSharpExtension";
-        private const string k_DefaultSolutionKey = "dotnet.defaultSolution";
-        private const string k_WorkspaceDevKey = "dotnet.enableWorkspaceBasedDevelopment";
+        private const string CsDevKitId = "ms-dotnettools.csdevkit";
+        private const string OmniSharpKey = "dotnet.preferCSharpExtension";
+        private const string DefaultSolutionKey = "dotnet.defaultSolution";
+        private const string WorkspaceDevKey = "dotnet.enableWorkspaceBasedDevelopment";
 
         /// <summary>
         /// Returns true when .vscode/settings.json no longer forces OmniSharp,
-        /// has <c>dotnet.defaultSolution</c> pointing to a .slnx file,
+        /// has <c>dotnet.defaultSolution</c> pointing to a .slnx/.sln file,
         /// has <c>dotnet.enableWorkspaceBasedDevelopment</c> set to false,
         /// and .vscode/extensions.json recommends C# Dev Kit.
         /// </summary>
         public static bool IsFixed(string projectRoot)
         {
-            bool settingsClean = !SettingsFileContainsKey(projectRoot, k_OmniSharpKey);
-            bool hasDefaultSolution = SettingsFileContainsKey(projectRoot, k_DefaultSolutionKey);
-            bool hasWorkspaceDev = SettingsFileContainsKey(projectRoot, k_WorkspaceDevKey);
+            bool settingsClean = !SettingsFileContainsKey(projectRoot, OmniSharpKey);
+            bool hasDefaultSolution = SettingsFileContainsKey(projectRoot, DefaultSolutionKey);
+            bool hasWorkspaceDev = SettingsFileContainsKey(projectRoot, WorkspaceDevKey);
             bool devKitRecommended = ExtensionsFileContainsDevKit(projectRoot);
             return settingsClean && hasDefaultSolution && hasWorkspaceDev && devKitRecommended;
         }
@@ -56,23 +57,28 @@ namespace BestPractices.Setup
             FixSettingsJson(projectRoot, vscodeDir);
             FixExtensionsJson(vscodeDir);
 
-            Debug.Log("[BestPractice] VS Code .slnx fix applied. Reload VS Code window (Cmd/Ctrl+Shift+P → Reload Window) to take effect.");
+            Debug.Log("[BestPractice] VS Code solution fix applied. Reload VS Code window (Cmd/Ctrl+Shift+P → Reload Window) to take effect.");
         }
 
         /// <summary>
-        /// Finds the first .slnx file in the project root directory.
+        /// Finds the first solution file in the project root directory —
+        /// prefers .slnx (Unity 6) and falls back to .sln (2022.3 and earlier).
         /// Returns the filename (not full path) or null if none is found.
         /// </summary>
-        private static string FindSlnxFileName(string projectRoot)
+        private static string FindSolutionFileName(string projectRoot)
         {
             if (!Directory.Exists(projectRoot))
                 return null;
 
             string[] slnxFiles = Directory.GetFiles(projectRoot, "*.slnx");
-            if (slnxFiles.Length == 0)
+            if (slnxFiles.Length > 0)
+                return Path.GetFileName(slnxFiles[0]);
+
+            string[] slnFiles = Directory.GetFiles(projectRoot, "*.sln");
+            if (slnFiles.Length == 0)
                 return null;
 
-            return Path.GetFileName(slnxFiles[0]);
+            return Path.GetFileName(slnFiles[0]);
         }
 
         private static void FixSettingsJson(string projectRoot, string vscodeDir)
@@ -82,11 +88,11 @@ namespace BestPractices.Setup
             // If settings.json does not exist, create it with just the required settings.
             if (!File.Exists(path))
             {
-                string slnxName = FindSlnxFileName(projectRoot);
+                string solutionName = FindSolutionFileName(projectRoot);
                 string content = "{\n";
-                if (slnxName != null)
-                    content += "    \"" + k_DefaultSolutionKey + "\": \"" + slnxName + "\",\n";
-                content += "    \"" + k_WorkspaceDevKey + "\": false\n";
+                if (solutionName != null)
+                    content += "    \"" + DefaultSolutionKey + "\": \"" + solutionName + "\",\n";
+                content += "    \"" + WorkspaceDevKey + "\": false\n";
                 content += "}\n";
                 File.WriteAllText(path, content);
                 Debug.Log($"[BestPractice] Created {path} with C# Dev Kit solution settings.");
@@ -98,11 +104,11 @@ namespace BestPractices.Setup
             bool modified = false;
 
             // Step 1: Remove the OmniSharp key if present.
-            if (fileContent.Contains(k_OmniSharpKey))
+            if (fileContent.Contains(OmniSharpKey))
             {
                 for (int i = lines.Count - 1; i >= 0; i--)
                 {
-                    if (lines[i].Contains(k_OmniSharpKey))
+                    if (lines[i].Contains(OmniSharpKey))
                     {
                         lines.RemoveAt(i);
                         modified = true;
@@ -110,24 +116,24 @@ namespace BestPractices.Setup
                         CleanUpTrailingComma(lines, i);
                     }
                 }
-                Debug.Log($"[BestPractice] Removed '{k_OmniSharpKey}' from {path}");
+                Debug.Log($"[BestPractice] Removed '{OmniSharpKey}' from {path}");
             }
 
             // Step 2: Add dotnet.defaultSolution if not present.
-            string slnxFileName = FindSlnxFileName(projectRoot);
-            if (slnxFileName != null && !lines.Any(l => l.Contains(k_DefaultSolutionKey)))
+            string solutionFileName = FindSolutionFileName(projectRoot);
+            if (solutionFileName != null && !lines.Any(l => l.Contains(DefaultSolutionKey)))
             {
-                InsertSettingBeforeClosingBrace(lines, "\"" + k_DefaultSolutionKey + "\": \"" + slnxFileName + "\"");
+                InsertSettingBeforeClosingBrace(lines, "\"" + DefaultSolutionKey + "\": \"" + solutionFileName + "\"");
                 modified = true;
-                Debug.Log($"[BestPractice] Added '{k_DefaultSolutionKey}: {slnxFileName}' to {path}");
+                Debug.Log($"[BestPractice] Added '{DefaultSolutionKey}: {solutionFileName}' to {path}");
             }
 
             // Step 3: Add dotnet.enableWorkspaceBasedDevelopment if not present.
-            if (!lines.Any(l => l.Contains(k_WorkspaceDevKey)))
+            if (!lines.Any(l => l.Contains(WorkspaceDevKey)))
             {
-                InsertSettingBeforeClosingBrace(lines, "\"" + k_WorkspaceDevKey + "\": false");
+                InsertSettingBeforeClosingBrace(lines, "\"" + WorkspaceDevKey + "\": false");
                 modified = true;
-                Debug.Log($"[BestPractice] Added '{k_WorkspaceDevKey}: false' to {path}");
+                Debug.Log($"[BestPractice] Added '{WorkspaceDevKey}: false' to {path}");
             }
 
             if (modified)
@@ -202,7 +208,7 @@ namespace BestPractices.Setup
 
             if (!File.Exists(path))
             {
-                string newContent = "{\n    \"recommendations\": [\n        \"" + k_CsDevKitId + "\"\n    ]\n}\n";
+                string newContent = "{\n    \"recommendations\": [\n        \"" + CsDevKitId + "\"\n    ]\n}\n";
                 File.WriteAllText(path, newContent);
                 Debug.Log($"[BestPractice] Created {path} with C# Dev Kit recommendation.");
                 return;
@@ -210,7 +216,7 @@ namespace BestPractices.Setup
 
             string content = File.ReadAllText(path);
 
-            if (content.Contains(k_CsDevKitId))
+            if (content.Contains(CsDevKitId))
                 return;
 
             // Insert the C# Dev Kit entry into the recommendations array.
@@ -222,12 +228,12 @@ namespace BestPractices.Setup
                 int closingBrace = content.LastIndexOf('}');
                 if (closingBrace < 0)
                 {
-                    File.WriteAllText(path, "{\n    \"recommendations\": [\n        \"" + k_CsDevKitId + "\"\n    ]\n}\n");
+                    File.WriteAllText(path, "{\n    \"recommendations\": [\n        \"" + CsDevKitId + "\"\n    ]\n}\n");
                 }
                 else
                 {
                     string prefix = content.Substring(0, closingBrace).TrimEnd().TrimEnd(',');
-                    string appended = prefix + ",\n    \"recommendations\": [\n        \"" + k_CsDevKitId + "\"\n    ]\n}\n";
+                    string appended = prefix + ",\n    \"recommendations\": [\n        \"" + CsDevKitId + "\"\n    ]\n}\n";
                     File.WriteAllText(path, appended);
                 }
             }
@@ -236,13 +242,13 @@ namespace BestPractices.Setup
                 int bracketIdx = content.IndexOf('[', recommendationsIdx);
                 if (bracketIdx >= 0)
                 {
-                    string insertion = "\n        \"" + k_CsDevKitId + "\",";
+                    string insertion = "\n        \"" + CsDevKitId + "\",";
                     content = content.Insert(bracketIdx + 1, insertion);
                     File.WriteAllText(path, content);
                 }
             }
 
-            Debug.Log($"[BestPractice] Added '{k_CsDevKitId}' to recommendations in {path}");
+            Debug.Log($"[BestPractice] Added '{CsDevKitId}' to recommendations in {path}");
         }
 
         private static bool SettingsFileContainsKey(string projectRoot, string key)
@@ -254,7 +260,7 @@ namespace BestPractices.Setup
         private static bool ExtensionsFileContainsDevKit(string projectRoot)
         {
             string path = Path.Combine(projectRoot, ".vscode", "extensions.json");
-            return File.Exists(path) && File.ReadAllText(path).Contains(k_CsDevKitId);
+            return File.Exists(path) && File.ReadAllText(path).Contains(CsDevKitId);
         }
     }
 }

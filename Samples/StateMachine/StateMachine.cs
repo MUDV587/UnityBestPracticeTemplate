@@ -10,13 +10,13 @@ namespace UnityBestPractices.Samples
     {
         #region Fields
 
-        private IState m_CurrentState;
+        private IState _currentState;
 
         #endregion
 
         #region Properties
 
-        public IState CurrentState => m_CurrentState;
+        public IState CurrentState => _currentState;
 
         #endregion
 
@@ -24,14 +24,14 @@ namespace UnityBestPractices.Samples
 
         public void ChangeState(IState newState)
         {
-            m_CurrentState?.OnExit();
-            m_CurrentState = newState;
-            m_CurrentState?.OnEnter();
+            _currentState?.OnExit();
+            _currentState = newState;
+            _currentState?.OnEnter();
         }
 
         public void Update()
         {
-            m_CurrentState?.OnUpdate();
+            _currentState?.OnUpdate();
         }
 
         #endregion

@@ -10,12 +10,12 @@ namespace BestPractices.Setup
     /// <remarks>
     /// The generated structure includes:
     /// <list type="table">
-    ///   <listheader><term>Category</term><description>Folders</description></listheader>
+    ///   <listheader><term>Category</term><description>folders</description></listheader>
     ///   <item><term>Art Assets</term><description>Animations, Audio, Fonts, Materials, Models, Shaders, Sprites, Textures, VFX</description></item>
     ///   <item><term>Code</term><description>Scripts (Core, UI, Utilities), Editor</description></item>
     ///   <item><term>Data</term><description>Data, Prefabs, Scenes, Settings</description></item>
     ///   <item><term>UI</term><description>Sprites, Atlas, UXML, USS, Settings (for UI Toolkit)</description></item>
-    ///   <item><term>Special Unity Folders</term><description>StreamingAssets</description></item>
+    ///   <item><term>Special Unity folders</term><description>StreamingAssets</description></item>
     ///   <item><term>Organization</term><description>Plugins</description></item>
     ///   <item><term>Assets root (outside project folder)</term><description>Editor, Resources, Documentation, ThirdParty</description></item>
     /// </list>
@@ -23,9 +23,9 @@ namespace BestPractices.Setup
     /// </remarks>
     public static class SetupProjectFolders
     {
-        internal const string k_ProjectNamePrefKey = "BestPractices.ProjectName";
+        internal const string ProjectNamePrefKey = "BestPractices.ProjectName";
 
-        private static readonly string[] k_Folders = new string[]
+        private static readonly string[] s_folders = new string[]
         {
             // Art Assets
             "Art",
@@ -72,7 +72,7 @@ namespace BestPractices.Setup
             "UI/USS",
             "UI/Settings",
 
-            // Special Unity Folders
+            // Special Unity folders
             "StreamingAssets",
 
             // Organization
@@ -88,7 +88,7 @@ namespace BestPractices.Setup
         public static void SaveProjectName(string projectName)
         {
             if (string.IsNullOrWhiteSpace(projectName)) return;
-            EditorPrefs.SetString(k_ProjectNamePrefKey, projectName.Trim());
+            EditorPrefs.SetString(ProjectNamePrefKey, projectName.Trim());
             Debug.Log($"[BestPractice] Project name set to '{projectName.Trim()}'.");
         }
 
@@ -102,11 +102,11 @@ namespace BestPractices.Setup
             if (string.IsNullOrWhiteSpace(projectName))
                 return;
 
-            EditorPrefs.SetString(k_ProjectNamePrefKey, projectName);
+            EditorPrefs.SetString(ProjectNamePrefKey, projectName);
 
             EditorUtilities.CreateFolder("Assets", projectName);
 
-            foreach (string folder in k_Folders)
+            foreach (string folder in s_folders)
             {
                 string parent = $"Assets/{projectName}";
                 string[] subfolders = folder.Split('/');
@@ -139,7 +139,7 @@ namespace BestPractices.Setup
             if (string.IsNullOrWhiteSpace(subSystemName))
                 return;
 
-            string projectName = EditorPrefs.GetString(k_ProjectNamePrefKey, "");
+            string projectName = EditorPrefs.GetString(ProjectNamePrefKey, "");
             if (string.IsNullOrWhiteSpace(projectName))
             {
                 Debug.LogWarning("[BestPractice] No project name found — run Setup Project Folders first.");

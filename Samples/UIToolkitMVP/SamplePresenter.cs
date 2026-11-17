@@ -9,8 +9,8 @@ namespace UnityBestPractices.Samples
     {
         #region Fields
 
-        private int m_Count;
-        private readonly SampleView m_View;
+        private int _count;
+        private readonly SampleView _view;
 
         #endregion
 
@@ -22,7 +22,7 @@ namespace UnityBestPractices.Samples
 
         #region Properties
 
-        public int Count => m_Count;
+        public int Count => _count;
 
         #endregion
 
@@ -30,13 +30,13 @@ namespace UnityBestPractices.Samples
 
         public SamplePresenter(SampleView view)
         {
-            m_View = view;
-            m_View.OnIncrementClicked += HandleIncrementClicked;
+            _view = view;
+            _view.OnIncrementClicked += HandleIncrementClicked;
         }
 
         public void Dispose()
         {
-            m_View.OnIncrementClicked -= HandleIncrementClicked;
+            _view.OnIncrementClicked -= HandleIncrementClicked;
         }
 
         #endregion
@@ -45,9 +45,9 @@ namespace UnityBestPractices.Samples
 
         private void HandleIncrementClicked()
         {
-            m_Count++;
-            m_View.SetCount(m_Count);
-            CountChanged?.Invoke(m_Count);
+            _count++;
+            _view.SetCount(_count);
+            CountChanged?.Invoke(_count);
         }
 
         #endregion

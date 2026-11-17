@@ -33,12 +33,12 @@ namespace BestPractices.Setup
 
         /// <summary>
         /// Creates assembly definition files under <c>Assets/{projectName}</c>,
-        /// where the project name is read from <see cref="SetupProjectFolders.k_ProjectNamePrefKey"/> in EditorPrefs.
+        /// where the project name is read from <see cref="SetupProjectFolders.ProjectNamePrefKey"/> in EditorPrefs.
         /// Skips any <c>.asmdef</c> files that already exist.
         /// </summary>
         public static void Execute()
         {
-            string root = EditorPrefs.GetString(SetupProjectFolders.k_ProjectNamePrefKey, "_ProjectName");
+            string root = EditorPrefs.GetString(SetupProjectFolders.ProjectNamePrefKey, "_ProjectName");
             string basePath = $"Assets/{root}";
 
             if (!AssetDatabase.IsValidFolder(basePath))

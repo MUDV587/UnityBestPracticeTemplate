@@ -7,7 +7,7 @@ public class #SCRIPTNAME# : NetworkBehaviour
 
     // Declare NetworkVariables here with explicit read/write permissions.
     // Example:
-    // private NetworkVariable<int> m_Health = new NetworkVariable<int>(
+    // private NetworkVariable<int> _health = new NetworkVariable<int>(
     //     100,
     //     NetworkVariableReadPermission.Everyone,
     //     NetworkVariableWritePermission.Server);

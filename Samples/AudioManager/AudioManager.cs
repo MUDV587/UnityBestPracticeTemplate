@@ -29,26 +29,26 @@ namespace UnityBestPractices.Samples.AudioManager
 
         #region Fields
 
-        [SerializeField] private AudioManagerConfig m_Config;
+        [SerializeField] private AudioManagerConfig _config;
 
         // Pooled SFX sources
-        private ObjectPool<AudioSource> m_SFXPool;
+        private ObjectPool<AudioSource> _sfxPool;
 
         // Dedicated non-pooled sources for continuous streams
-        private AudioSource m_MusicSourceA;
-        private AudioSource m_MusicSourceB;
-        private AudioSource m_AmbienceSource;
-        private bool m_MusicOnA = true;
+        private AudioSource _musicSourceA;
+        private AudioSource _musicSourceB;
+        private AudioSource _ambienceSource;
+        private bool _musicOnA = true;
 
         // Active crossfade coroutine — stop before starting a new one
-        private Coroutine m_CrossfadeRoutine;
+        private Coroutine _crossfadeRoutine;
 
         #endregion
 
         #region Properties
 
         /// <summary>Currently active music source (the one audible to the player).</summary>
-        public AudioSource ActiveMusicSource => m_MusicOnA ? m_MusicSourceA : m_MusicSourceB;
+        public AudioSource ActiveMusicSource => _musicOnA ? _musicSourceA : _musicSourceB;
 
         #endregion
 
@@ -65,7 +65,7 @@ namespace UnityBestPractices.Samples.AudioManager
             Instance = this;
             DontDestroyOnLoad(gameObject);
 
-            if (m_Config == null)
+            if (_config == null)
             {
                 Debug.LogError("[AudioManager] AudioManagerConfig is not assigned. " +
                                "Create one via Assets → Create → Best Practices → Audio Manager Config " +
@@ -83,7 +83,7 @@ namespace UnityBestPractices.Samples.AudioManager
         {
             if (Instance == this)
             {
-                m_SFXPool?.Dispose();
+                _sfxPool?.Dispose();
                 Instance = null;
             }
         }
@@ -100,13 +100,13 @@ namespace UnityBestPractices.Samples.AudioManager
         public void PlaySFX(AudioClip clip, Vector3 worldPosition, float volume = 1f, float pitch = 1f)
         {
             if (clip == null) return;
-            if (m_Config.SFXGroup == null)
+            if (_config.SFXGroup == null)
             {
                 Debug.LogWarning("[AudioManager] SFXGroup is not assigned in AudioManagerConfig.");
                 return;
             }
 
-            AudioSource source = m_SFXPool.Get();
+            AudioSource source = _sfxPool.Get();
             source.transform.position = worldPosition;
             source.clip = clip;
             source.volume = volume;
@@ -123,10 +123,10 @@ namespace UnityBestPractices.Samples.AudioManager
         {
             if (clip == null) return;
 
-            AudioSource source = m_SFXPool.Get();
+            AudioSource source = _sfxPool.Get();
             // Override mixer group to UI for this shot
-            if (m_Config.UIGroup != null)
-                source.outputAudioMixerGroup = m_Config.UIGroup;
+            if (_config.UIGroup != null)
+                source.outputAudioMixerGroup = _config.UIGroup;
 
             source.transform.position = Vector3.zero;
             source.clip = clip;
@@ -135,7 +135,7 @@ namespace UnityBestPractices.Samples.AudioManager
             source.spatialBlend = 0f;  // 2D
             source.Play();
             StartCoroutine(ReturnToPool(source, clip.length,
-                restoreGroup: m_Config.SFXGroup));
+                restoreGroup: _config.SFXGroup));
         }
 
         /// <summary>
@@ -160,10 +160,10 @@ namespace UnityBestPractices.Samples.AudioManager
         {
             if (newClip == null) return;
 
-            if (m_CrossfadeRoutine != null)
-                StopCoroutine(m_CrossfadeRoutine);
+            if (_crossfadeRoutine != null)
+                StopCoroutine(_crossfadeRoutine);
 
-            m_CrossfadeRoutine = StartCoroutine(CrossfadeRoutine(newClip, loop, m_Config.CrossfadeDuration));
+            _crossfadeRoutine = StartCoroutine(CrossfadeRoutine(newClip, loop, _config.CrossfadeDuration));
         }
 
         /// <summary>Stops music playback on both sources.</summary>
@@ -171,8 +171,8 @@ namespace UnityBestPractices.Samples.AudioManager
         {
             if (fadeOutDuration <= 0f)
             {
-                m_MusicSourceA.Stop();
-                m_MusicSourceB.Stop();
+                _musicSourceA.Stop();
+                _musicSourceB.Stop();
             }
             else
             {
@@ -184,14 +184,14 @@ namespace UnityBestPractices.Samples.AudioManager
         public void PlayAmbience(AudioClip clip, float volume = 1f)
         {
             if (clip == null) return;
-            m_AmbienceSource.clip = clip;
-            m_AmbienceSource.volume = volume;
-            m_AmbienceSource.loop = true;
-            m_AmbienceSource.Play();
+            _ambienceSource.clip = clip;
+            _ambienceSource.volume = volume;
+            _ambienceSource.loop = true;
+            _ambienceSource.Play();
         }
 
         /// <summary>Stops the ambience source.</summary>
-        public void StopAmbience() => m_AmbienceSource.Stop();
+        public void StopAmbience() => _ambienceSource.Stop();
 
         #endregion
 
@@ -238,11 +238,11 @@ namespace UnityBestPractices.Samples.AudioManager
 
         private void InitialiseSFXPool()
         {
-            m_SFXPool = new ObjectPool<AudioSource>(
+            _sfxPool = new ObjectPool<AudioSource>(
                 createFunc: CreateSFXSource,
                 actionOnGet: source =>
                 {
-                    source.outputAudioMixerGroup = m_Config.SFXGroup;
+                    source.outputAudioMixerGroup = _config.SFXGroup;
                     source.gameObject.SetActive(true);
                 },
                 actionOnRelease: source =>
@@ -253,20 +253,20 @@ namespace UnityBestPractices.Samples.AudioManager
                 },
                 actionOnDestroy: source => Destroy(source.gameObject),
                 collectionCheck: false,
-                defaultCapacity: m_Config.PoolDefaultCapacity,
-                maxSize: m_Config.PoolMaxSize);
+                defaultCapacity: _config.PoolDefaultCapacity,
+                maxSize: _config.PoolMaxSize);
         }
 
         private void InitialiseMusicSources()
         {
-            m_MusicSourceA = CreateDedicatedSource("MusicSource_A", m_Config.MusicGroup, loop: true);
-            m_MusicSourceB = CreateDedicatedSource("MusicSource_B", m_Config.MusicGroup, loop: true);
-            m_MusicSourceB.volume = 0f; // B starts silent — used as the crossfade target
+            _musicSourceA = CreateDedicatedSource("MusicSource_A", _config.MusicGroup, loop: true);
+            _musicSourceB = CreateDedicatedSource("MusicSource_B", _config.MusicGroup, loop: true);
+            _musicSourceB.volume = 0f; // B starts silent — used as the crossfade target
         }
 
         private void InitialiseAmbienceSource()
         {
-            m_AmbienceSource = CreateDedicatedSource("AmbienceSource", m_Config.AmbienceGroup, loop: true);
+            _ambienceSource = CreateDedicatedSource("AmbienceSource", _config.AmbienceGroup, loop: true);
         }
 
         private AudioSource CreateSFXSource()
@@ -274,7 +274,7 @@ namespace UnityBestPractices.Samples.AudioManager
             var go = new GameObject("PooledSFX");
             go.transform.SetParent(transform);
             var source = go.AddComponent<AudioSource>();
-            source.outputAudioMixerGroup = m_Config.SFXGroup;
+            source.outputAudioMixerGroup = _config.SFXGroup;
             source.playOnAwake = false;
             source.gameObject.SetActive(false);
             return source;
@@ -307,8 +307,8 @@ namespace UnityBestPractices.Samples.AudioManager
             AudioMixer masterMixer = GetAnyMixer();
             if (masterMixer != null)
             {
-                float savedMaster = PlayerPrefs.GetFloat(m_Config.MasterVolumeParam, 1f);
-                masterMixer.SetFloat(m_Config.MasterVolumeParam, LinearToDecibels(savedMaster));
+                float savedMaster = PlayerPrefs.GetFloat(_config.MasterVolumeParam, 1f);
+                masterMixer.SetFloat(_config.MasterVolumeParam, LinearToDecibels(savedMaster));
             }
         }
 
@@ -323,13 +323,13 @@ namespace UnityBestPractices.Samples.AudioManager
             if (restoreGroup != null)
                 source.outputAudioMixerGroup = restoreGroup;
             if (source != null && source.gameObject.activeSelf)
-                m_SFXPool.Release(source);
+                _sfxPool.Release(source);
         }
 
         private IEnumerator CrossfadeRoutine(AudioClip newClip, bool loop, float duration)
         {
             AudioSource outgoing = ActiveMusicSource;
-            m_MusicOnA = !m_MusicOnA;
+            _musicOnA = !_musicOnA;
             AudioSource incoming = ActiveMusicSource;
 
             incoming.clip = newClip;
@@ -353,7 +353,7 @@ namespace UnityBestPractices.Samples.AudioManager
             outgoing.clip = null;
             outgoing.volume = 1f;
             incoming.volume = startVolume;
-            m_CrossfadeRoutine = null;
+            _crossfadeRoutine = null;
         }
 
         private IEnumerator FadeOutRoutine(AudioSource source, float duration)
@@ -378,10 +378,10 @@ namespace UnityBestPractices.Samples.AudioManager
 
         private string GetExposedParam(AudioChannel channel) => channel switch
         {
-            AudioChannel.SFX => m_Config.SFXVolumeParam,
-            AudioChannel.Music => m_Config.MusicVolumeParam,
-            AudioChannel.UI => m_Config.UIVolumeParam,
-            AudioChannel.Ambience => m_Config.AmbienceVolumeParam,
+            AudioChannel.SFX => _config.SFXVolumeParam,
+            AudioChannel.Music => _config.MusicVolumeParam,
+            AudioChannel.UI => _config.UIVolumeParam,
+            AudioChannel.Ambience => _config.AmbienceVolumeParam,
             _ => string.Empty
         };
 
@@ -389,10 +389,10 @@ namespace UnityBestPractices.Samples.AudioManager
         {
             AudioMixerGroup group = channel switch
             {
-                AudioChannel.SFX => m_Config.SFXGroup,
-                AudioChannel.Music => m_Config.MusicGroup,
-                AudioChannel.UI => m_Config.UIGroup,
-                AudioChannel.Ambience => m_Config.AmbienceGroup,
+                AudioChannel.SFX => _config.SFXGroup,
+                AudioChannel.Music => _config.MusicGroup,
+                AudioChannel.UI => _config.UIGroup,
+                AudioChannel.Ambience => _config.AmbienceGroup,
                 _ => null
             };
             return group?.audioMixer;
@@ -400,7 +400,7 @@ namespace UnityBestPractices.Samples.AudioManager
 
         private AudioMixer GetAnyMixer()
         {
-            return (m_Config.SFXGroup ?? m_Config.MusicGroup ?? m_Config.UIGroup ?? m_Config.AmbienceGroup)
+            return (_config.SFXGroup ?? _config.MusicGroup ?? _config.UIGroup ?? _config.AmbienceGroup)
                 ?.audioMixer;
         }
 

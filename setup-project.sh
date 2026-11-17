@@ -29,8 +29,8 @@ Options:
                             (AudioManager, ObjectPooling, ScriptableObjectEventSystem,
                             StateMachine, UIToolkitMVP). Default: none.
   --style-guide-ref <ref>   Branch/tag of unity-code-style-guide to clone (default: main).
-  --skip-style-guide        Don't clone krogh-jacobsen/unity-code-style-guide into the project.
-  --fix-vscode              Also run the VS Code .slnx fix (settings.json / extensions.json).
+  --skip-style-guide        Don't clone MUDV587/unity-code-style-guide into the project.
+  --fix-vscode              Also run the VS Code solution fix (.sln/.slnx) (settings.json / extensions.json).
   -h, --help                Show this help.
 EOF
 }
@@ -109,10 +109,11 @@ cp "$SCRIPT_DIR"/ScriptTemplates/*.cs.txt "$PROJECT_PATH/Assets/ScriptTemplates/
 
 # ── Step 5: clone the style guide ────────────────────────────────────────────────────────────
 if [[ "$SKIP_STYLE_GUIDE" == false ]]; then
-  echo "==> Cloning unity-code-style-guide (ref: $STYLE_GUIDE_REF)"
+  # Fork with the .NET Runtime naming standard (m_/s_/k_ retired) — see CLAUDE.md.
+  echo "==> Cloning unity-code-style-guide fork (ref: $STYLE_GUIDE_REF)"
   TMP_CLONE="$(mktemp -d)"
   git clone --depth 1 --branch "$STYLE_GUIDE_REF" \
-    https://github.com/krogh-jacobsen/unity-code-style-guide "$TMP_CLONE"
+    https://github.com/MUDV587/unity-code-style-guide "$TMP_CLONE"
   rm -rf "$TMP_CLONE/.git"
 
   DEST="$PROJECT_PATH/AI/unity-code-style-guide"

@@ -7,7 +7,7 @@ public class #SCRIPTNAME# : Editor
 {
     #region Fields
 
-    // private SerializedProperty m_ExampleProperty;
+    // private SerializedProperty _exampleProperty;
 
     #endregion
 
@@ -15,7 +15,7 @@ public class #SCRIPTNAME# : Editor
 
     private void OnEnable()
     {
-        // m_ExampleProperty = serializedObject.FindProperty("m_ExampleField");
+        // _exampleProperty = serializedObject.FindProperty("_exampleField");
         #NOTRIM#
     }
 

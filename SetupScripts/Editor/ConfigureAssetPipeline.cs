@@ -15,9 +15,9 @@ namespace BestPractices.Setup
         //   1 = Enabled
         //   2 = Enabled Outside Playmode  ← recommended
 
-        private const string k_AutoRefreshKey = "kAutoRefreshMode";
+        private const string AutoRefreshKey = "kAutoRefreshMode";
 
-        public static int AutoRefreshMode => EditorPrefs.GetInt(k_AutoRefreshKey, 1);
+        public static int AutoRefreshMode => EditorPrefs.GetInt(AutoRefreshKey, 1);
 
         public static bool IsAutoRefreshRecommended => AutoRefreshMode == 2;
         public static bool IsAutoRefreshDisabled => AutoRefreshMode == 0;
@@ -25,19 +25,19 @@ namespace BestPractices.Setup
 
         public static void ApplyAutoRefreshRecommended()
         {
-            EditorPrefs.SetInt(k_AutoRefreshKey, 2);
+            EditorPrefs.SetInt(AutoRefreshKey, 2);
             Debug.Log("[Best Practices] Auto Refresh set to 'Enabled Outside Playmode' — refreshes while editing, never during a playtest.");
         }
 
         public static void ApplyAutoRefreshOff()
         {
-            EditorPrefs.SetInt(k_AutoRefreshKey, 0);
+            EditorPrefs.SetInt(AutoRefreshKey, 0);
             Debug.Log("[Best Practices] Auto Refresh disabled. Trigger manually with Cmd+R / Ctrl+R.");
         }
 
         public static void ApplyAutoRefreshAlwaysOn()
         {
-            EditorPrefs.SetInt(k_AutoRefreshKey, 1);
+            EditorPrefs.SetInt(AutoRefreshKey, 1);
             Debug.Log("[Best Practices] Auto Refresh set to always enabled.");
         }
 
@@ -45,17 +45,17 @@ namespace BestPractices.Setup
         // EditorPrefs key confirmed in Unity 6 source: "AssetPipelineImportWorkerCountPercentage"
         // Default: 25. Machine-local.
 
-        private const string k_WorkerCountKey = "AssetPipelineImportWorkerCountPercentage";
-        private const int k_RecommendedWorkerPct = 50;
+        private const string WorkerCountKey = "AssetPipelineImportWorkerCountPercentage";
+        private const int RecommendedWorkerPct = 50;
 
-        public static int ImportWorkerCountPct => EditorPrefs.GetInt(k_WorkerCountKey, 25);
+        public static int ImportWorkerCountPct => EditorPrefs.GetInt(WorkerCountKey, 25);
 
-        public static bool IsImportWorkerCountRecommended => ImportWorkerCountPct >= k_RecommendedWorkerPct;
+        public static bool IsImportWorkerCountRecommended => ImportWorkerCountPct >= RecommendedWorkerPct;
 
         public static void ApplyImportWorkerCountRecommended()
         {
-            EditorPrefs.SetInt(k_WorkerCountKey, k_RecommendedWorkerPct);
-            Debug.Log($"[Best Practices] Import Worker Count set to {k_RecommendedWorkerPct}% — better parallel import throughput.");
+            EditorPrefs.SetInt(WorkerCountKey, RecommendedWorkerPct);
+            Debug.Log($"[Best Practices] Import Worker Count set to {RecommendedWorkerPct}% — better parallel import throughput.");
         }
 
         // ── Compress Textures on Import ───────────────────────────────────────

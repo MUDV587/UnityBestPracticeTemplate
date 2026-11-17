@@ -15,13 +15,13 @@ namespace BestPractices.Setup
     /// </remarks>
     public static class SetupTagsAndLayers
     {
-        private static readonly string[] k_DefaultTags =
+        private static readonly string[] s_defaultTags =
         {
             "Player", "Enemy", "NPC", "Projectile", "Pickup",
             "Interactable", "Checkpoint", "SpawnPoint", "Trigger", "MainCamera"
         };
 
-        private static readonly string[] k_DefaultSortingLayers =
+        private static readonly string[] s_defaultSortingLayers =
         {
             "Background", "Environment", "Props", "Characters", "Foreground", "UI", "Overlay"
         };
@@ -32,7 +32,7 @@ namespace BestPractices.Setup
             public string layerName;
         }
 
-        private static readonly PhysicsLayerEntry[] k_DefaultPhysicsLayers =
+        private static readonly PhysicsLayerEntry[] s_defaultPhysicsLayers =
         {
             new PhysicsLayerEntry { layerIndex = 8,  layerName = "Player" },
             new PhysicsLayerEntry { layerIndex = 9,  layerName = "Enemy" },
@@ -84,7 +84,7 @@ namespace BestPractices.Setup
             }
 
             int added = 0;
-            foreach (string tag in k_DefaultTags)
+            foreach (string tag in s_defaultTags)
             {
                 if (TagExists(tagsProp, tag)) continue;
 
@@ -123,7 +123,7 @@ namespace BestPractices.Setup
             }
 
             int added = 0;
-            foreach (string layerName in k_DefaultSortingLayers)
+            foreach (string layerName in s_defaultSortingLayers)
             {
                 if (SortingLayerExists(sortingLayersProp, layerName)) continue;
 
@@ -159,7 +159,7 @@ namespace BestPractices.Setup
             }
 
             int added = 0;
-            foreach (var entry in k_DefaultPhysicsLayers)
+            foreach (var entry in s_defaultPhysicsLayers)
             {
                 if (entry.layerIndex < 8 || entry.layerIndex >= layersProp.arraySize)
                 {

@@ -50,7 +50,7 @@ Mirrors `setup-project.sh` steps 3–5:
 3. Copy `Presets/` (this repo) → `<project>/Assets/Settings/Presets/` and `ScriptTemplates/*.cs.txt`
    → `<project>/Assets/ScriptTemplates/`. Both must land on disk before Phase 2 runs — the preset
    registration step reads them from that path.
-4. Unless the user says to skip it, clone `https://github.com/krogh-jacobsen/unity-code-style-guide`
+4. Unless the user says to skip it, clone `https://github.com/MUDV587/unity-code-style-guide`
    (shallow, then strip its `.git`) into `<project>/AI/unity-code-style-guide/`, and deposit thin
    pointer files at `CLAUDE.md`, `AGENTS.md`, `.github/copilot-instructions.md`, `.cursorrules`,
    `.junie/guidelines.md` in the project root, each pointing at

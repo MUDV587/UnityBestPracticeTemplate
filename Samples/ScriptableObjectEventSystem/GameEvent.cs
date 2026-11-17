@@ -13,7 +13,7 @@ namespace UnityBestPractices.Samples
         #region Events
 
         public static event Action<GameEvent> OnAnyEventRaised;
-        private event Action m_OnRaised;
+        private event Action _onRaised;
 
         #endregion
 
@@ -21,17 +21,17 @@ namespace UnityBestPractices.Samples
 
         public void Subscribe(Action listener)
         {
-            m_OnRaised += listener;
+            _onRaised += listener;
         }
 
         public void Unsubscribe(Action listener)
         {
-            m_OnRaised -= listener;
+            _onRaised -= listener;
         }
 
         public void Raise()
         {
-            m_OnRaised?.Invoke();
+            _onRaised?.Invoke();
             OnAnyEventRaised?.Invoke(this);
         }
 

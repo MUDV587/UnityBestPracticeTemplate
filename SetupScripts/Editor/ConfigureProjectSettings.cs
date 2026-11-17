@@ -50,13 +50,13 @@ namespace BestPractices.Setup
         public static bool IsNewHierarchyWindowConfigured =>
             EditorPrefs.GetBool("Hierarchy/UseNewHierarchyWindow", false);
 
-        const string k_AssetManagerImportLocationKey = "System.String::AM4U.defaultImportLocation";
-        const string k_AssetManagerSubfolderKey = "System.Boolean::AM4U.isSubfolderCreationEnabled";
-        const string k_ThirdPartyAssetsPath = "Assets/ThirdPartyAssets";
+        const string AssetManagerImportLocationKey = "System.String::AM4U.defaultImportLocation";
+        const string AssetManagerSubfolderKey = "System.Boolean::AM4U.isSubfolderCreationEnabled";
+        const string ThirdPartyAssetsPath = "Assets/ThirdPartyAssets";
 
         public static bool IsAssetManagerImportLocationConfigured =>
-            EditorPrefs.GetString(k_AssetManagerImportLocationKey, "Assets") == k_ThirdPartyAssetsPath &&
-            EditorPrefs.GetBool(k_AssetManagerSubfolderKey, false);
+            EditorPrefs.GetString(AssetManagerImportLocationKey, "Assets") == ThirdPartyAssetsPath &&
+            EditorPrefs.GetBool(AssetManagerSubfolderKey, false);
 
         // ── Individual apply methods ──────────────────────────────────────────
 
@@ -124,10 +124,10 @@ namespace BestPractices.Setup
 
         public static void ApplyAssetManagerImportLocation()
         {
-            if (!AssetDatabase.IsValidFolder(k_ThirdPartyAssetsPath))
+            if (!AssetDatabase.IsValidFolder(ThirdPartyAssetsPath))
                 AssetDatabase.CreateFolder("Assets", "ThirdPartyAssets");
-            EditorPrefs.SetString(k_AssetManagerImportLocationKey, k_ThirdPartyAssetsPath);
-            EditorPrefs.SetBool(k_AssetManagerSubfolderKey, true);
+            EditorPrefs.SetString(AssetManagerImportLocationKey, ThirdPartyAssetsPath);
+            EditorPrefs.SetBool(AssetManagerSubfolderKey, true);
             Debug.Log("[Best Practices] Asset Manager default import location set to Assets/ThirdPartyAssets with subfolder creation enabled.");
         }
 
@@ -160,8 +160,8 @@ namespace BestPractices.Setup
 
         public static void ResetAssetManagerImportLocation()
         {
-            EditorPrefs.SetString(k_AssetManagerImportLocationKey, "Assets");
-            EditorPrefs.SetBool(k_AssetManagerSubfolderKey, false);
+            EditorPrefs.SetString(AssetManagerImportLocationKey, "Assets");
+            EditorPrefs.SetBool(AssetManagerSubfolderKey, false);
             Debug.Log("[Best Practices] Asset Manager import location reset to Assets.");
         }
 
