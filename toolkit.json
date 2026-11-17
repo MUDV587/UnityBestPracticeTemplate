@@ -1,8 +1,8 @@
 {
   "name": "unity-best-practices-toolkit",
   "version": "2.0.1",
-  "description": "A CLI/agent-driven Unity 6 project setup toolkit: folder scaffold, assembly definitions, import presets, tags & layers, project/iteration/asset-pipeline settings, script templates, and samples. Not a Unity package — run setup-project.sh (or the unity-project-setup skill) against a project instead of installing.",
-  "unityMinVersion": "6000.3",
+  "description": "A CLI/agent-driven Unity project setup toolkit: folder scaffold, assembly definitions, import presets, tags & layers, project/iteration/asset-pipeline settings, script templates, and samples. Not a Unity package — run setup-project.sh (or the unity-project-setup skill) against a project instead of installing.",
+  "unityMinVersion": "2022.3",
   "license": "MIT",
   "author": {
     "name": "Krogh-Jacobsen",

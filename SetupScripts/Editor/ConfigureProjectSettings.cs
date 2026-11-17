@@ -6,9 +6,11 @@ using UnityEngine;
 namespace BestPractices.Setup
 {
     /// <summary>
-    /// Applies recommended Unity 6 project settings — either all at once or individually.
+    /// Applies recommended project settings — either all at once or individually.
     /// Call <see cref="ApplySettings"/> to apply everything non-interactively; called by
     /// <see cref="BestPracticesSetup"/> as part of the setup pipeline.
+    /// Unity 6-only settings (New Hierarchy window, Asset Manager import location) are
+    /// no-ops on earlier editors.
     /// </summary>
     public static class ConfigureProjectSettings
     {
@@ -118,17 +120,25 @@ namespace BestPractices.Setup
 
         public static void ApplyNewHierarchyWindow()
         {
+#if UNITY_6000_0_OR_NEWER
             EditorPrefs.SetBool("Hierarchy/UseNewHierarchyWindow", true);
             Debug.Log("[Best Practices] New Hierarchy window enabled. Reopen the Hierarchy window to apply.");
+#else
+            Debug.Log("[Best Practices] New Hierarchy window is a Unity 6 feature — skipped on this editor.");
+#endif
         }
 
         public static void ApplyAssetManagerImportLocation()
         {
+#if UNITY_6000_0_OR_NEWER
             if (!AssetDatabase.IsValidFolder(ThirdPartyAssetsPath))
                 AssetDatabase.CreateFolder("Assets", "ThirdPartyAssets");
             EditorPrefs.SetString(AssetManagerImportLocationKey, ThirdPartyAssetsPath);
             EditorPrefs.SetBool(AssetManagerSubfolderKey, true);
             Debug.Log("[Best Practices] Asset Manager default import location set to Assets/ThirdPartyAssets with subfolder creation enabled.");
+#else
+            Debug.Log("[Best Practices] Asset Manager import location is a Unity 6 feature — skipped on this editor.");
+#endif
         }
 
         // ── Individual disable / revert methods ──────────────────────────────────
@@ -154,15 +164,23 @@ namespace BestPractices.Setup
 
         public static void DisableNewHierarchyWindow()
         {
+#if UNITY_6000_0_OR_NEWER
             EditorPrefs.SetBool("Hierarchy/UseNewHierarchyWindow", false);
             Debug.Log("[Best Practices] New Hierarchy window disabled. Reopen the Hierarchy window to apply.");
+#else
+            Debug.Log("[Best Practices] New Hierarchy window is a Unity 6 feature — nothing to disable on this editor.");
+#endif
         }
 
         public static void ResetAssetManagerImportLocation()
         {
+#if UNITY_6000_0_OR_NEWER
             EditorPrefs.SetString(AssetManagerImportLocationKey, "Assets");
             EditorPrefs.SetBool(AssetManagerSubfolderKey, false);
             Debug.Log("[Best Practices] Asset Manager import location reset to Assets.");
+#else
+            Debug.Log("[Best Practices] Asset Manager import location is a Unity 6 feature — nothing to reset on this editor.");
+#endif
         }
 
         // ── Apply all (used by New Project Wizard) ────────────────────────────

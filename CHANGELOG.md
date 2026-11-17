@@ -18,6 +18,15 @@ and this package adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **`scripts/sync-upstream.ps1`** — one-command upstream sync: fast-forwards local `main` from `upstream/main`, then merges it through `Unity6000` into `Unity2022` (no rebasing; conflict surface is limited to the style-rename files)
 
+### Unity 2022.3 line (Unity2022 branch)
+- **`ObjectPooling` sample** — `Awaitable.WaitForSecondsAsync` replaced with a coroutine (`IEnumerator` + `WaitForSeconds`); readme updated
+- **`Documentation/QuickReference.md`** — "Async" section retargeted from Awaitable to coroutines
+- **`toolkit.json`** — `unityMinVersion` is now `2022.3`
+- **`setup-project.sh`** — `--style-guide-ref` now defaults to `Unity2022` (the 2022.3-retargeted style guide); usage text updated. Use `--style-guide-ref main` for the Unity 6 line
+- **`unity-project-setup` skill** — clones the `Unity2022` branch of the style-guide fork (Unity 6 line: `main`)
+- **Unity 6-only project settings** — New Hierarchy window and Asset Manager import-location are `#if UNITY_6000_0_OR_NEWER` no-ops on earlier editors (the setup scripts compile on the target editor)
+- **`ScriptTemplates/readme.md`** — retargeted to Unity 2022.3 docs
+
 ## [2.0.0] - 2026-09-08
 ### Changed
 - **Complete migration from Unity package to CLI/agent-driven toolkit** — no longer installed via `manifest.json`; run `setup-project.sh` (or the `unity-project-setup` skill) against a project instead. Package identity `com.unity.best-practices` retired; `package.json` replaced by `toolkit.json` (plain metadata, not a UPM manifest)

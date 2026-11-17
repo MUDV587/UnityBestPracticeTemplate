@@ -11,7 +11,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_PATH=""
 EDITOR_VERSION="lts"
 SAMPLES=""
-STYLE_GUIDE_REF="main"
+STYLE_GUIDE_REF="Unity2022"
 SKIP_STYLE_GUIDE=false
 FIX_VSCODE=false
 
@@ -28,7 +28,8 @@ Options:
   --samples <a,b,c>         Comma-separated sample names to copy from Samples/
                             (AudioManager, ObjectPooling, ScriptableObjectEventSystem,
                             StateMachine, UIToolkitMVP). Default: none.
-  --style-guide-ref <ref>   Branch/tag of unity-code-style-guide to clone (default: main).
+  --style-guide-ref <ref>   Branch/tag of unity-code-style-guide to clone (default: Unity2022 — the
+                             2022.3-retargeted line; pass main for the Unity 6 line).
   --skip-style-guide        Don't clone MUDV587/unity-code-style-guide into the project.
   --fix-vscode              Also run the VS Code solution fix (.sln/.slnx) (settings.json / extensions.json).
   -h, --help                Show this help.

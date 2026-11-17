@@ -82,15 +82,24 @@ block__element--modifier
 - Modifier: `inventory-panel__slot--selected`
 - CSS variables: `--color-primary`, `--spacing-md`
 
-## Unity 6 Async — Awaitable
+## Async — Coroutines
+
+Unity 2022.3 has no `Awaitable`; coroutines are the standard for simple delays and sequences:
 
 ```csharp
-// Unity 6+
-await Awaitable.WaitForSecondsAsync(delay, cancellationToken);
+private IEnumerator ReturnAfterDelay()
+{
+    yield return new WaitForSeconds(_lifetime);
 
-// Guard after every await:
-if (this == null || !isActiveAndEnabled) return;
+    // Guard after every yield — the object may have been disabled:
+    if (this == null || !isActiveAndEnabled) yield break;
+
+    DoThing();
+}
 ```
+
+Start with `StartCoroutine(ReturnAfterDelay())`. For anything more complex than a delay,
+prefer a typed async path (e.g. `addressables.Handle.Task`) or an explicit state machine.
 
 ## Assembly Definitions
 

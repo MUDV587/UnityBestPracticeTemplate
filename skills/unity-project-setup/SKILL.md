@@ -1,7 +1,7 @@
 ---
 name: unity-project-setup
 description: Apply this toolkit's one-time Unity project setup — folder scaffold, asmdefs, import
-  presets, tags & layers, .gitignore/.gitattributes/.editorconfig, Unity 6 project/iteration/
+  presets, tags & layers, .gitignore/.gitattributes/.editorconfig, project/iteration/
   asset-pipeline settings, script templates, and the unity-code-style-guide AI instructions — to
   a new or existing Unity project. Use when setup-project.sh isn't available, didn't finish, or the
   user wants an agent to drive the steps interactively (e.g. against an already-open live Editor)
@@ -51,7 +51,9 @@ Mirrors `setup-project.sh` steps 3–5:
    → `<project>/Assets/ScriptTemplates/`. Both must land on disk before Phase 2 runs — the preset
    registration step reads them from that path.
 4. Unless the user says to skip it, clone `https://github.com/MUDV587/unity-code-style-guide`
-   (shallow, then strip its `.git`) into `<project>/AI/unity-code-style-guide/`, and deposit thin
+   (shallow, then strip its `.git`) into `<project>/AI/unity-code-style-guide/`, checking out the
+   **`Unity2022`** branch (the Unity 2022.3-retargeted style guide — pass `main` only for the
+   Unity 6 line), and deposit thin
    pointer files at `CLAUDE.md`, `AGENTS.md`, `.github/copilot-instructions.md`, `.cursorrules`,
    `.junie/guidelines.md` in the project root, each pointing at
    `AI/unity-code-style-guide/AGENTS.md`. Never leave a nested `.git` inside the host project's

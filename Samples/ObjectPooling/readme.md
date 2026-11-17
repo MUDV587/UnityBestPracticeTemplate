@@ -20,5 +20,5 @@ Demonstrates Unity's built-in `ObjectPool<T>` for efficiently reusing GameObject
 
 - Never `Destroy` pooled objects — call `Release()` instead
 - `actionOnGet` / `actionOnRelease` toggle `SetActive` — don't use the constructor for init
-- Use `Awaitable.WaitForSecondsAsync` (Unity 6+) instead of coroutines for simple delays
-- Guard continuations: `if (this == null || _spawner == null) return;` after any await
+- Use coroutines (`IEnumerator` + `WaitForSeconds`) for simple delays — Unity 2022.3 has no `Awaitable` (that's a Unity 6 API)
+- Guard continuations: `if (this == null || _spawner == null) yield break;` after any wait — a disabling object must not schedule work

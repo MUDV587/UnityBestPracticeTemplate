@@ -1,11 +1,11 @@
 # Unity Best Practices Toolkit
 
-A CLI/agent-driven toolkit that sets up a new (or existing) Unity 6 project in one pass: folder
+A CLI/agent-driven toolkit that sets up a new (or existing) Unity project in one pass: folder
 scaffold, assembly definitions, import presets, tags & layers, `.gitignore`/`.gitattributes`/
 `.editorconfig`, recommended project/iteration/asset-pipeline settings, script templates, and
 sample code — plus an up-to-date AI coding-style guide.
 
-Supports **Unity 6000.3+** · License: **MIT**
+Supports **Unity 2022.3 LTS+** · License: **MIT**
 
 **This is not a Unity package.** There is nothing to add to `Packages/manifest.json`. You run this
 toolkit once against a project using the [Unity CLI](https://docs.unity.com/en-us/unity-cli), and
@@ -21,7 +21,7 @@ project's Editor **closed** (batch mode needs the lock — see below if it's ope
 ```bash
 git clone https://github.com/MUDV587/UnityBestPracticeTemplate.git
 cd UnityBestPracticeTemplate
-./setup-project.sh --project /path/to/MyGame --editor-version 6000.3.5f1 --samples ObjectPooling,StateMachine
+./setup-project.sh --project /path/to/MyGame --editor-version 2022.3.62f1 --samples ObjectPooling,StateMachine
 ```
 
 This:
@@ -57,7 +57,7 @@ One orchestrator, `BestPracticesSetup.Run()`, runs every step below in order:
 | Import Presets | Registers the presets below in the Preset Manager |
 | Tags & Layers | Registers a default set of tags, sorting layers, and physics layers — see below |
 | `.gitignore` / `.gitattributes` / `.editorconfig` | Generated at the project root |
-| Project Settings | Enter Play Mode, .NET Standard 2.1, Input System, Incremental GC, Asset Serialization, Version Control, Create at Origin, New Hierarchy, Asset Manager import location |
+| Project Settings | Enter Play Mode, .NET Standard 2.1, Input System, Incremental GC, Asset Serialization, Version Control, Create at Origin, New Hierarchy (Unity 6 only — skipped on 2022.3), Asset Manager import location (Unity 6 only — skipped on 2022.3) |
 | Iteration Settings | Script Changes → Recompile After Finished Playing, Async Shader Compilation on, Managed Stripping disabled |
 | Asset Pipeline | Auto Refresh → Outside Playmode, Import Worker Count 50%, Compress Textures on Import |
 
@@ -116,7 +116,7 @@ Opt in via `--samples a,b,c`:
 | Sample | Demonstrates |
 |---|---|
 | `ScriptableObjectEventSystem` | Observer pattern using `GameEvent` ScriptableObjects |
-| `ObjectPooling` | `ObjectPool<T>` spawner with auto-release via Unity 6 `Awaitable` |
+| `ObjectPooling` | `ObjectPool<T>` spawner with auto-release via coroutines |
 | `UIToolkitMVP` | UXML + USS + presenter wiring for the Model-View-Presenter pattern |
 | `StateMachine` | Enum-based state machine with `IState` and `OnEnter`/`OnUpdate`/`OnExit` |
 | `AudioManager` | Pooled `AudioSource` manager with `AudioMixer` routing and PlayerPrefs volume persistence |

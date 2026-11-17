@@ -9,10 +9,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   reference assets, and a Claude Code skill, applied to a Unity project on demand.
 - Metadata/versioning lives in `toolkit.json` (name, version, `unityMinVersion`, keywords) — it is not
   a UPM manifest and nothing reads it at runtime.
-- Unity minimum version: 6000.3 (targets Unity 6 APIs such as the Asset Manager import-location keys
-  and `Il2CppCodeGeneration`).
-- Style/instruction content is **not** authored here — it's sourced live from
-  `https://github.com/krogh-jacobsen/unity-code-style-guide` as one step of the setup pipeline.
+- Unity minimum version: **2022.3 LTS** (Unity 6-only settings — New Hierarchy window, Asset Manager
+  import-location keys — are `#if UNITY_6000_0_OR_NEWER` no-ops on earlier editors).
+- Style/instruction content is **not** authored here — it's sourced live from the fork
+  `https://github.com/MUDV587/unity-code-style-guide` as one step of the setup pipeline.
 
 ## Development workflow
 

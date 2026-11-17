@@ -1,10 +1,11 @@
+using System.Collections;
 using UnityEngine;
 
 namespace UnityBestPractices.Samples
 {
     /// <summary>
     /// A pooled projectile that returns itself to the pool after a delay.
-    /// Uses Unity 6's Awaitable instead of coroutines.
+    /// Uses a coroutine so it works on Unity 2022.3+ (there is no Awaitable on 2022.3).
     /// </summary>
     public class PooledProjectile : MonoBehaviour
     {
@@ -22,7 +23,7 @@ namespace UnityBestPractices.Samples
         public void Initialize(PooledSpawner spawner)
         {
             _spawner = spawner;
-            ReturnAfterDelay();
+            StartCoroutine(ReturnAfterDelay());
         }
 
         #endregion
@@ -38,13 +39,13 @@ namespace UnityBestPractices.Samples
 
         #region Private Methods
 
-        private async void ReturnAfterDelay()
+        private IEnumerator ReturnAfterDelay()
         {
-            await Awaitable.WaitForSecondsAsync(_lifetime);
+            yield return new WaitForSeconds(_lifetime);
 
             if (this == null || _spawner == null)
             {
-                return;
+                yield break;
             }
 
             _spawner.ReturnToPool(this);
