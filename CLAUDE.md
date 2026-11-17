@@ -11,8 +11,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   a UPM manifest and nothing reads it at runtime.
 - Unity minimum version: 6000.3 (targets Unity 6 APIs such as the Asset Manager import-location keys
   and `Il2CppCodeGeneration`).
-- Style/instruction content is **not** authored here — it's sourced live from
-  `https://github.com/krogh-jacobsen/unity-code-style-guide` as one step of the setup pipeline.
+- Style/instruction content is **not** authored here — it's sourced live from the fork
+  `https://github.com/MUDV587/unity-code-style-guide` as one step of the setup pipeline.
 
 ## Development workflow
 
