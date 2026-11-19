@@ -27,6 +27,16 @@ and this package adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Unity 6-only project settings** — New Hierarchy window and Asset Manager import-location are `#if UNITY_6000_0_OR_NEWER` no-ops on earlier editors (the setup scripts compile on the target editor)
 - **`ScriptTemplates/readme.md`** — retargeted to Unity 2022.3 docs
 
+### Unity 2022.3 line — Unity CLI fallback (Nov 2026)
+- **`setup-project.sh` runs without the Unity CLI** — the toolkit is no longer hard-blocked when `unity` is not on PATH. New behaviour:
+  - `--editor-path <exe>` (or `UNITY_EDITOR_PATH`) picks the Editor binary explicitly
+  - without a CLI, the Editor binary is resolved from the standard Hub install locations for `--editor-version` (also `D:..F:` roots, classic pre-Hub layouts, macOS/Linux/Universal paths)
+  - the pipeline invokes the Editor directly in batch mode (`-batchmode -nographics -quit -executeMethod ...`), which works on every 2022.3+ Editor
+  - `--editor-version` is required when no CLI is installed (no `lts` auto-pick — explicit or config value only)
+- **`unity-project-setup` skill** — the live-Editor path is now explicitly annotated **Unity 6.0+ only** (Unity Pipeline package prerequisite); headless invocation via `--editor-path` is the supported route on 2022.3
+- **Verified end-to-end on Unity 2022.3.62f1** (headless, no CLI): scratch project — full pipeline run including folder scaffold, `.asmdef` generation, 10 presets registered, tags/sorting layers/physics layers, `.gitignore`/`.gitattributes`, forked `.editorconfig` copy (DRY path), all project/iteration/asset-pipeline settings; Unity 6-only settings correctly recorded as skipped
+- `readme.md` — quick start now documents the no-CLI route; `scripts/sync-upstream.ps1` unchanged
+
 ## [2.0.0] - 2026-09-08
 ### Changed
 - **Complete migration from Unity package to CLI/agent-driven toolkit** — no longer installed via `manifest.json`; run `setup-project.sh` (or the `unity-project-setup` skill) against a project instead. Package identity `com.unity.best-practices` retired; `package.json` replaced by `toolkit.json` (plain metadata, not a UPM manifest)

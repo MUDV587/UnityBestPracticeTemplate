@@ -66,9 +66,12 @@ Mirrors `setup-project.sh` steps 3–5:
 - **Closed Editor** (the common case): run
   `unity run "<project>" --editor-version <ver> --allow-install -- -executeMethod BestPractices.Setup.BestPracticesSetup.Run -logFile "<project>/setup.log"`.
   Check the exit code; on failure, read the log tail and report it rather than guessing.
-- **Live Editor already open**: trigger a recompile (e.g. touching a script, or via whatever the
+- **Live Editor already open** (**Unity 6.0+ only** — drives a live Editor via the Unity Pipeline
+  package): trigger a recompile (e.g. touching a script, or via whatever the
   `unity-cli` skill's live-Editor commands expose) so the staged scripts compile in, then run
   `unity command eval 'BestPractices.Setup.BestPracticesSetup.Run();'` against the live connection.
+  On Unity 2022.3 this path does not exist (the Pipeline package requires Unity 6.0+) —
+  make the Editor closed first and use the headless path above.
 
 Either way, `BestPracticesSetup.Run()` reads `setup-config.json` itself and runs every step in
 order — you do not call the individual `SetupProjectFolders` / `ConfigurePresets` / etc. methods

@@ -15,8 +15,11 @@ it leaves behind only the results — no installed assembly, no menu items, no o
 
 ## Quick Start
 
-Requires the [`unity` CLI](https://docs.unity.com/en-us/unity-cli) on your PATH and the target
-project's Editor **closed** (batch mode needs the lock — see below if it's open).
+Requires the **Unity 2022.3 LTS+** Editor installed (this branch) and the target project's
+Editor **closed** (batch mode needs the lock — see below if it's open). Two ways to run:
+with Unity 6's `unity` CLI on your PATH, or without any CLI — the Editor binary is then invoked
+directly in batch mode; pass `--editor-version 2022.3.62f1` (or `--editor-path <exe>`) if the
+default Hub install locations don't resolve automatically.
 
 ```bash
 git clone https://github.com/MUDV587/UnityBestPracticeTemplate.git

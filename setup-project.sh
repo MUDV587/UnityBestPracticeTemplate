@@ -1,15 +1,20 @@
 #!/usr/bin/env bash
-# Runs this toolkit's one-time setup pipeline against a Unity project using the Unity CLI
-# (`unity` — see the unity-cli skill). Requires the target project's Editor to be closed —
-# `unity run` needs the batch-mode lock. If a live Editor already has the project open, use
-# the `unity-project-setup` Claude Code skill instead (skills/unity-project-setup/SKILL.md),
-# which drives the same steps through a live Editor connection.
+# Runs this toolkit's one-time setup pipeline against a Unity project.
+# Requires the target project's Editor to be closed — batch mode needs the lock.
+# Two invocation paths:
+#   1. Unity CLI (`unity`, new in Unity 6) with --editor-version (default: lts);
+#   2. No CLI — the Editor binary invoked directly in batch mode (Unity 2022.3+).
+#      Pass --editor-version explicitly or --editor-path / UNITY_EDITOR_PATH.
+# If a live Editor already has the project open, use the `unity-project-setup`
+# Claude Code skill instead (skills/unity-project-setup/SKILL.md), which drives
+# the same steps through a live Editor connection (Unity 6.0+ only, pipeline package).
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 PROJECT_PATH=""
 EDITOR_VERSION="lts"
+EDITOR_PATH=""
 SAMPLES=""
 STYLE_GUIDE_REF="Unity2022"
 SKIP_STYLE_GUIDE=false
@@ -21,10 +26,14 @@ Usage: setup-project.sh --project <path> [options]
 
 Required:
   --project <path>          Path to the target Unity project (must already exist —
-                             use `unity projects create` first for a brand-new project).
+                             create one via the Hub UI, or `unity projects create`).
 
 Options:
-  --editor-version <ver>    Editor version to run with (default: lts).
+  --editor-path <exe>       Path to Unity.exe to run setup with (or UNITY_EDITOR_PATH).
+                             With the Unity CLI installed, resolved automatically; without it,
+                             auto-detected from Hub's default install locations for --editor-version.
+  --editor-version <ver>    Editor version to run with (default: lts). Only used when --editor-path
+                             is not given. Aliases: lts, lts:<year>, 6, 2022, or a full version.
   --samples <a,b,c>         Comma-separated sample names to copy from Samples/
                             (AudioManager, ObjectPooling, ScriptableObjectEventSystem,
                             StateMachine, UIToolkitMVP). Default: none.
@@ -39,6 +48,8 @@ EOF
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --project) PROJECT_PATH="$2"; shift 2 ;;
+    --editor-path) EDITOR_PATH="$2"; shift 2 ;;
+    --editor-path=*) EDITOR_PATH="${1#*=}"; shift ;;
     --editor-version) EDITOR_VERSION="$2"; shift 2 ;;
     --samples) SAMPLES="$2"; shift 2 ;;
     --style-guide-ref) STYLE_GUIDE_REF="$2"; shift 2 ;;
@@ -58,10 +69,62 @@ if [[ ! -d "$PROJECT_PATH/Assets" ]]; then
   echo "Error: '$PROJECT_PATH' does not look like a Unity project (no Assets/ folder)." >&2
   exit 2
 fi
-if ! command -v unity >/dev/null 2>&1; then
-  echo "Error: the 'unity' CLI is not on PATH. See the unity-cli skill for install instructions." >&2
+
+# The Unity CLI (`unity`, new in Unity 6) is optional. When it is absent — and whenever
+# --editor-path is provided — the pipeline falls back to invoking the Editor binary
+# directly in batch mode, which works on every Unity 2022.3+ Editor.
+USE_UNITY_CLI=false
+if [[ -n "$EDITOR_PATH" ]]; then
+  if [[ ! -f "$EDITOR_PATH" ]]; then
+    echo "Error: --editor-path '$EDITOR_PATH' does not exist or is not a file." >&2
+    exit 2
+  fi
+  USE_UNITY_CLI=false
+elif command -v unity >/dev/null 2>&1; then
+  USE_UNITY_CLI=true
+fi
+
+if [[ "$USE_UNITY_CLI" == false && "$EDITOR_VERSION" == "lts" && -z "$EDITOR_PATH" ]]; then
+  echo "Error: without the Unity CLI, --editor-version must be explicit (e.g. --editor-version 2022.3.62f1)" >&2
+  echo "or pass --editor-path (or set UNITY_EDITOR_PATH) to the Editor binary." >&2
   exit 2
 fi
+
+# Resolve an Editor binary when the CLI path is not used.
+resolve_editor() {
+  local version="$1"
+  # 1. Explicit --editor-path wins.
+  [[ -n "$EDITOR_PATH" ]] && { echo "$EDITOR_PATH"; return; }
+  # 2. Environment override.
+  [[ -n "${UNITY_EDITOR_PATH:-}" ]] && { echo "$UNITY_EDITOR_PATH"; return; }
+
+  local roots=()
+  [[ -n "${PROGRAMFILES:-}" ]] && roots+=("$PROGRAMFILES")
+  [[ -n "${ProgramFiles:-}" ]] && [[ "${roots[*]}" != *"$ProgramFiles"* ]] && roots+=("$ProgramFiles")
+  [[ -n "${ProgramFiles(x86):-}" ]] && roots+=("${ProgramFiles(x86)}")
+  [[ -d "${UNITY_HUB:-}" ]] && roots+=("$UNITY_HUB")
+  [[ -d "${USERPROFILE:-}" ]] && roots+=("$USERPROFILE")
+  roots+=("C:" "D:" "E:" "F:")
+
+  local root pattern
+  for root in "${roots[@]}"; do
+    # Hub standard layouts, classic pre-Hub layouts, macOS and Linux layouts.
+    for pattern in \
+      "$root/Unity/Hub/Editor/$version/Editor/Unity.exe" \
+      "$root/Unity/Hub/Editor/$version/Editor/Unity" \
+      "$root/Unity/Hub/Unity/Editor/$version/Editor/Unity.exe" \
+      "$root/Unity Hub/Editor/$version/Editor/Unity.exe" \
+      "$root/Unity/$version/Editor/Unity.exe" \
+      "$HOME/Unity/Hub/Editor/$version/Editor/Unity" \
+      "/Applications/Unity/Hub/Editor/$version/Unity.app/Contents/MacOS/Unity" \
+      "/Applications/Unity_Hub/Editor/$version/Unity.app/Contents/MacOS/Unity" \
+      "$HOME/Unity/Editor/$version/Editor/Unity" \
+    do
+      [[ -f "$pattern" ]] && { echo "$pattern"; return 0; }
+    done
+  done
+  return 1
+}
 
 PROJECT_PATH="$(cd "$PROJECT_PATH" && pwd)"
 PROJECT_NAME="$(basename "$PROJECT_PATH")"
@@ -133,16 +196,37 @@ else
 fi
 
 # ── Step 6: run the orchestrator headlessly ──────────────────────────────────────────────────
-echo "==> Running BestPracticesSetup.Run via unity run (editor-version: $EDITOR_VERSION)"
-if ! unity run "$PROJECT_PATH" \
-  --editor-version "$EDITOR_VERSION" \
-  --allow-install \
-  -- -executeMethod BestPractices.Setup.BestPracticesSetup.Run -logFile "$PROJECT_PATH/setup.log"
-then
-  echo "Error: setup failed. Log tail:" >&2
-  tail -n 40 "$PROJECT_PATH/setup.log" >&2 || true
-  echo "Staged scripts left in place at $STAGING_DIR for debugging." >&2
-  exit 1
+if [[ "$USE_UNITY_CLI" == true ]]; then
+  echo "==> Running BestPracticesSetup.Run via unity run (editor-version: $EDITOR_VERSION)"
+  if ! unity run "$PROJECT_PATH" \
+    --editor-version "$EDITOR_VERSION" \
+    --allow-install \
+    -- -executeMethod BestPractices.Setup.BestPracticesSetup.Run -logFile "$PROJECT_PATH/setup.log"
+  then
+    echo "Error: setup failed. Log tail:" >&2
+    tail -n 40 "$PROJECT_PATH/setup.log" >&2 || true
+    echo "Staged scripts left in place at $STAGING_DIR for debugging." >&2
+    exit 1
+  fi
+else
+  UNITY_EXE="$(resolve_editor "$EDITOR_VERSION")" || {
+    echo "Error: no Unity Editor found for --editor-version '$EDITOR_VERSION'." >&2
+    echo "  Looked in Hub/classic install paths on the common roots (ProgramFiles, D:..F:, macOS, Linux)." >&2
+    echo "  Pass --editor-path (or set UNITY_EDITOR_PATH) to the Editor binary, e.g.:" >&2
+    echo "    --editor-path \"D:/Program Files/Unity/$EDITOR_VERSION/Editor/Unity.exe\"" >&2
+    exit 2
+  }
+  echo "==> Running BestPracticesSetup.Run via the Editor binary in batch mode"
+  echo "    Editor: $UNITY_EXE"
+  echo "    (no Unity CLI required — direct batch-mode invocation, works on Unity 2022.3+)"
+  if ! "$UNITY_EXE" -batchmode -nographics -quit -projectPath "$PROJECT_PATH" \
+    -executeMethod BestPractices.Setup.BestPracticesSetup.Run -logFile "$PROJECT_PATH/setup.log"
+  then
+    echo "Error: setup failed. Log tail:" >&2
+    tail -n 40 "$PROJECT_PATH/setup.log" >&2 || true
+    echo "Staged scripts left in place at $STAGING_DIR for debugging." >&2
+    exit 1
+  fi
 fi
 
 # ── Step 7: copy selected samples (folder scaffold now exists) ──────────────────────────────
